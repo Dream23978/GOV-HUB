@@ -1,12 +1,12 @@
 "use client";
-
+import { createClient } from "@/lib/supabase/client";
 import { useState } from "react";
 import Link from "next/link";
 import { NikInputField } from "./NikInputField";
 import { PasswordInputField } from "./PasswordInputField";
 import { z } from "zod";
 import ScrollAnimate from "@/app/components/ScrollAnimate";
-
+import { useRouter } from "next/navigation";
 // Validasi form login: NIK wajib 16 digit, password minimal 8 karakter
 const loginSchema = z.object({
   nik: z.string().min(16, "NIK harus 16 karakter"),
@@ -21,11 +21,13 @@ export function LoginFormPanel() {
 
   // validasi form dengan Zod, lalu tampilkan error jika gagal
   // TODO(backend): setelah validasi lolos, panggil Supabase auth di sini
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+
     e.preventDefault();
     const result = loginSchema.safeParse({ nik, password });
     if (!result.success) {
       const fieldErrors = result.error.flatten().fieldErrors;
+
       setErrors({
         nik: fieldErrors.nik?.[0],
         password: fieldErrors.password?.[0],
@@ -33,8 +35,18 @@ export function LoginFormPanel() {
       return;
     }
     setErrors({});
-    // TODO: connect to Supabase auth
-  };
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: nik + "@local",
+      password,
+    });
+     if (error) {
+    setErrors({ nik: "NIK atau password salah" });
+    return;
+  }
+    const router = useRouter();
+    router.push("/dashboard");
+};
 
   return (
     <div className="flex flex-col justify-center h-full px-10 md:px-14 lg:px-16 py-12">

@@ -1,11 +1,25 @@
-import { SignUpForm } from "@/components/sign-up-form";
+import { LoginHero } from "@/app/components/login/LoginHero";
+import { SignUpFormPanel } from "@/app/components/sign-up/SignUpFormPanel";
 
 export default function Page() {
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-      <div className="w-full max-w-sm">
-        <SignUpForm />
+    <main className="min-h-screen flex items-center justify-center bg-[#E8EFF7] p-4 md:p-8">
+      {/* Card container — identik dengan login page */}
+      <div className="w-full max-w-[780px] min-h-[520px] flex rounded-3xl overflow-hidden shadow-2xl bg-[#EEF3F9]">
+
+        {/* Left — Garuda hero image (~38% width) */}
+        <div className="hidden md:flex w-[38%] flex-shrink-0 relative">
+          <LoginHero />
+        </div>
+
+        {/* Vertical divider */}
+        <div className="hidden md:block w-px bg-gray-200 flex-shrink-0" />
+
+        {/* Right — Sign up form (~62% width) */}
+        <div className="flex-1 flex flex-col">
+          <SignUpFormPanel />
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
