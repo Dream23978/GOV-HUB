@@ -10,7 +10,7 @@
 * **Nama Tim**: *[Nama Tim Anda]*
 * **Daftar Anggota Tim**:
   1. **Agung Saputra** (231230003@unmuhpnk.ac.id) — Backend
-  3. **Ferdian Iswara** (231230011@unmuhpnk.ac.id) — Frontend
+  3. **Ferdian Iswara** (231230043@unmuhpnk.ac.id) — Frontend
   2. **Ade Tio Denari** (231230031@unmuhpnk.ac.id) — Data Analyst + UI Designer
   3. **Muhmmad Borneo Satria Prawira Putra** (231230011@unmuhpnk.ac.id) — Data Analyst + UI Designer
   
@@ -204,7 +204,7 @@ Untuk pengujian fitur login dan peninjauan dashboard warga, silakan gunakan akun
 Sesuai dengan ketentuan transparansi pengembangan:
 
 * **Layanan & Model AI yang Digunakan**:
-  * **Google Gemini 3.8 Flash (Low)** melalui asisten pengembang Antigravity AI.
+  * **Google Gemini 4 Argon (High)** melalui asisten pengembang Antigravity AI.
 * **Bagian Produk & Proses yang Memanfaatkan AI**:
   * **Analisis Kode & Refactoring Komponen UI**: Membantu penyusunan komponen form Zod, masking NIK, serta sinkronisasi tema Tailwind CSS.
   * **Penyusunan Dokumentasi & Diagram Mermaid**: Merancang visualisasi arsitektur sistem, alur otentikasi data, dan penyusunan berkas `README.md` berstandar kompetisi.
