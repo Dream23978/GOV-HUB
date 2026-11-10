@@ -142,7 +142,7 @@ sequenceDiagram
 
 ```bash
 # 1. Kloning repositori proyek
-git clone <url-repositori-anda>
+git clone https://github.com/Dream23978/GOV-HUB.git
 cd gov
 
 # 2. Instal seluruh dependensi proyek
