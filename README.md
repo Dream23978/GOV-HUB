@@ -9,9 +9,11 @@
 
 * **Nama Tim**: *[Nama Tim Anda]*
 * **Daftar Anggota Tim**:
-  1. **Agung Saputra** (231230003@unmuhpnk.ac.id) — Fullstack Developer
-  2. *[Nama Anggota 2]* — *[Peran]*
-  3. *[Nama Anggota 3]* — *[Peran]*
+  1. **Agung Saputra** (231230003@unmuhpnk.ac.id) — Backend
+  3. **Ferdian Iswara** (231230011@unmuhpnk.ac.id) — Frontend
+  2. **Ade Tio Denari** (231230031@unmuhpnk.ac.id) — Data Analyst + UI Designer
+  3. **Muhmmad Borneo Satria Prawira Putra** (231230011@unmuhpnk.ac.id) — Data Analyst + UI Designer
+  
 
 ---
 
