@@ -7,7 +7,16 @@ export default function ProtectedLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-slate-900 flex">
+    <div
+      className="min-h-screen flex"
+      style={{
+        backgroundImage: "url('/bg-dash.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed",
+      }}
+    >
       {/* Sidebar */}
       <DashboardSidebar />
 
@@ -16,9 +25,9 @@ export default function ProtectedLayout({
         {/* Topbar */}
         <DashboardTopbar />
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-2xl mx-auto">
+        {/* Page content — Centered horizontally */}
+        <main className="flex-1 overflow-y-auto p-6 md:p-8 flex justify-center">
+          <div className="w-full max-w-2xl mx-auto">
             {children}
           </div>
         </main>

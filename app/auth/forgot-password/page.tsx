@@ -1,18 +1,38 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ForgotPasswordLayout } from "@/app/components/forgot-password/ForgotPasswordLayout";
 import ScrollAnimate from "@/app/components/ScrollAnimate";
 import Link from "next/link";
+import { requestPasswordResetAction } from "@/app/actions/auth";
 
 export default function ForgotPasswordPage() {
+  const router = useRouter();
   const [contact, setContact] = useState("");
   const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!contact.trim()) return;
-    setSent(true);
+
+    setLoading(true);
+    setErrorMessage("");
+    try {
+      const res = await requestPasswordResetAction(contact);
+      if (!res.success) {
+        setErrorMessage(res.error || "Akun tidak ditemukan.");
+        setLoading(false);
+        return;
+      }
+      router.push(`/auth/forgot-password/verify?email=${encodeURIComponent(contact)}`);
+    } catch {
+      router.push(`/auth/forgot-password/verify?email=${encodeURIComponent(contact)}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -29,7 +49,7 @@ export default function ForgotPasswordPage() {
           </p>
           <button
             type="button"
-            className="w-full bg-blue-400 hover:bg-blue-500 active:bg-blue-600 text-white font-semibold py-3 rounded-xl transition-colors duration-200 text-sm"
+            className="w-full bg-blue-400 hover:bg-blue-500 active:bg-blue-600 text-white font-semibold py-3 rounded-xl transition-colors duration-200 text-sm cursor-pointer"
             onClick={() => setSent(false)}
           >
             Kirim ulang
@@ -46,6 +66,12 @@ export default function ForgotPasswordPage() {
             </p>
           </ScrollAnimate>
 
+          {errorMessage && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl">
+              {errorMessage}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <ScrollAnimate direction="left" duration={0.5} delay={0.15}>
               <input
@@ -59,12 +85,13 @@ export default function ForgotPasswordPage() {
             </ScrollAnimate>
 
             <ScrollAnimate direction="up" duration={0.5} delay={0.25}>
-              <Link
-                href={`/auth/forgot-password/verify?email=${encodeURIComponent(contact)}`}
-                className=" flex  items-center justify-center w-full bg-blue-400 hover:bg-blue-500 active:bg-blue-600 text-white font-semibold py-3 rounded-xl transition-colors duration-200 text-sm"
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex items-center justify-center w-full bg-blue-400 hover:bg-blue-500 active:bg-blue-600 text-white font-semibold py-3 rounded-xl transition-colors duration-200 text-sm cursor-pointer disabled:opacity-70"
               >
-                Kirim Kode OTP
-              </Link>
+                {loading ? "Mengirim..." : "Kirim Kode OTP"}
+              </button>
             </ScrollAnimate>
           </form>
         </>

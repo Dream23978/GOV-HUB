@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
 import { ForgotPasswordLayout } from "@/app/components/forgot-password/ForgotPasswordLayout";
 import { PasswordField } from "@/app/components/forgot-password/PasswordField";
 import { PasswordRulesChecklist } from "@/app/components/forgot-password/PasswordRulesChecklist";
 import ScrollAnimate from "@/app/components/ScrollAnimate";
-import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { updateUserPasswordAction } from "@/app/actions/auth";
 
 const resetPasswordSchema = z
   .object({
@@ -26,10 +28,15 @@ const resetPasswordSchema = z
     path: ["confirmPassword"],
   });
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const email = searchParams.get("email") ?? "";
+
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string }>({});
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string; general?: string }>({});
 
   const validateLive = (newPassword: string, newConfirm: string) => {
     const result = resetPasswordSchema.safeParse({ password: newPassword, confirmPassword: newConfirm });
@@ -55,13 +62,47 @@ export default function ResetPasswordPage() {
     validateLive(password, val);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     validateLive(password, confirm);
     const result = resetPasswordSchema.safeParse({ password, confirmPassword: confirm });
     if (!result.success) return;
-    // pure slicing — no backend
-    console.log("Reset password submitted", result.data);
+
+    setLoading(true);
+    setErrors({});
+
+    try {
+      // 1. Coba update via browser client (jika ada recovery session)
+      const supabase = createClient();
+      const clientRes = await supabase.auth.updateUser({ password });
+
+      if (!clientRes.error) {
+        router.push("/auth/forgot-password/success");
+        return;
+      }
+
+      // 2. Jika client belum memiliki session, gunakan Server Action
+      const serverUpdate = await updateUserPasswordAction(password, email);
+
+      if (serverUpdate.success) {
+        router.push("/auth/forgot-password/success");
+        return;
+      }
+
+      // Jika keduanya gagal
+      setErrors({
+        general:
+          serverUpdate.error ||
+          clientRes.error?.message ||
+          "Gagal memperbarui kata sandi. Pastikan SUPABASE_SERVICE_ROLE_KEY valid di .env.local.",
+      });
+      setLoading(false);
+    } catch {
+      setErrors({
+        general: "Terjadi kesalahan saat memperbarui kata sandi. Silakan coba kembali.",
+      });
+      setLoading(false);
+    }
   };
 
   return (
@@ -75,7 +116,13 @@ export default function ResetPasswordPage() {
         </p>
       </ScrollAnimate>
 
-      <form onSubmit={handleSubmit}  className="flex flex-col gap-4">
+      {errors.general && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl">
+          {errors.general}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <ScrollAnimate direction="left" duration={0.5} delay={0.1}>
           <PasswordField
             id="new-password"
@@ -100,15 +147,23 @@ export default function ResetPasswordPage() {
         </ScrollAnimate>
 
         <ScrollAnimate direction="up" duration={0.5} delay={0.3}>
-          <Link //ganti link jadi button biar onchange nye nyambung
-            href="/auth/login"
-            className="flex items-center justify-center w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition-colors duration-200 text-sm mt-2"
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex items-center justify-center w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition-colors duration-200 text-sm mt-2 cursor-pointer disabled:opacity-70"
           >
-            Perbarui Kata Sandi
-          </Link>
-
+            {loading ? "Menyimpan..." : "Perbarui Kata Sandi"}
+          </button>
         </ScrollAnimate>
       </form>
     </ForgotPasswordLayout>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }

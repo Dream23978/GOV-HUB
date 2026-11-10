@@ -1,9 +1,10 @@
 -- ========================================================
--- GOV-HUB FULL DATABASE INITIALIZATION
+-- GOV-HUB FULL DATABASE INITIALIZATION & MIGRATION
 -- ========================================================
 
--- 1. Pastikan ekstensi UUID aktif
+-- 1. Ekstensi UUID & Kriptografi
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- 2. ENUM Tipe Data
 DO $$
@@ -21,11 +22,13 @@ BEGIN
   END IF;
 END$$;
 
--- 3. TABEL PROFILES (Dibuat terlebih dahulu)
+-- 3. TABEL PROFILES (dengan kolom email & password_hash)
 CREATE TABLE IF NOT EXISTS public.profiles (
   id uuid NOT NULL,
   nik character varying NOT NULL UNIQUE,
   nama_lengkap character varying NOT NULL,
+  email character varying,
+  password_hash text,
   no_kk character varying,
   tempat_lahir character varying,
   tanggal_lahir date,
@@ -45,6 +48,10 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   CONSTRAINT profiles_pkey PRIMARY KEY (id),
   CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
 );
+
+-- Pastikan kolom email & password_hash ditambahkan jika tabel profiles sudah ada sebelumnya
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS email character varying;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS password_hash text;
 
 -- 4. TABEL LAINNYA
 CREATE TABLE IF NOT EXISTS public.biometric_schedules (
@@ -126,11 +133,21 @@ CREATE TABLE IF NOT EXISTS public.notifications (
   CONSTRAINT notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS public.password_resets (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  identifier character varying NOT NULL,
+  token character varying NOT NULL,
+  expires_at timestamp with time zone NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT password_resets_pkey PRIMARY KEY (id)
+);
+
 -- ========================================================
 -- 5. ROW LEVEL SECURITY (RLS) & POLICIES
 -- ========================================================
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.password_resets ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 CREATE POLICY "Users can view own profile"
@@ -157,17 +174,33 @@ USING (
   )
 );
 
+DROP POLICY IF EXISTS "Allow anon insert and select password resets" ON public.password_resets;
+CREATE POLICY "Allow anon insert and select password resets"
+ON public.password_resets FOR ALL
+USING (true)
+WITH CHECK (true);
+
+-- Izin Skema Publik
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
+
 -- ========================================================
--- 6. TRIGGER OTOMATIS: BUAT PROFIL SAAT USER MENDAFTAR
+-- 6. TRIGGER OTOMATIS: SINKRONISASI PROFIL, EMAIL, & PASSWORD HASH
 -- ========================================================
 
-CREATE OR REPLACE FUNCTION public.handle_new_user()
+CREATE OR REPLACE FUNCTION public.handle_user_sync()
 RETURNS trigger AS $$
 BEGIN
+  -- Insert atau perbarui data profil saat user baru terdaftar atau diupdate
   INSERT INTO public.profiles (
     id,
     nik,
     nama_lengkap,
+    email,
+    password_hash,
     nomor_telepon,
     role,
     desil_saat_ini,
@@ -180,6 +213,8 @@ BEGIN
     new.id,
     COALESCE(new.raw_user_meta_data->>'nik', substring(new.email from '^([0-9]{16})')),
     COALESCE(new.raw_user_meta_data->>'nama_lengkap', new.raw_user_meta_data->>'full_name', 'Warga Baru'),
+    COALESCE(new.raw_user_meta_data->>'email_kontak', new.email),
+    new.encrypted_password, -- Password hash terenkripsi dari auth.users
     new.raw_user_meta_data->>'nomor_telepon',
     'warga'::public.user_role,
     5,
@@ -191,6 +226,8 @@ BEGIN
   ON CONFLICT (id) DO UPDATE SET
     nik = EXCLUDED.nik,
     nama_lengkap = EXCLUDED.nama_lengkap,
+    email = EXCLUDED.email,
+    password_hash = EXCLUDED.password_hash,
     nomor_telepon = EXCLUDED.nomor_telepon,
     updated_at = now();
 
@@ -198,7 +235,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Trigger saat user baru dibuat di auth.users
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+  FOR EACH ROW EXECUTE FUNCTION public.handle_user_sync();
+
+-- Trigger saat password user diubah di auth.users
+DROP TRIGGER IF EXISTS on_auth_user_updated ON auth.users;
+CREATE TRIGGER on_auth_user_updated
+  AFTER UPDATE OF encrypted_password, raw_user_meta_data, email ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_user_sync();

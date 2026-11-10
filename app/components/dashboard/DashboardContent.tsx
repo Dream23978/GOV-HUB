@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ShieldCheck, Award } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -60,26 +60,15 @@ export async function DashboardContent() {
   const desil = profile?.desil_saat_ini ?? 5;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 w-full">
       {/* Greeting */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-            Halo, {displayNama}!
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            {maskedNik} • {profile?.kota || "Surabaya"}, {profile?.provinsi || "Jawa Timur"}
-          </p>
-        </div>
-
-        {/* Desil Badge */}
-        <div className="hidden sm:flex items-center gap-2 bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-blue-900 px-3.5 py-1.5 rounded-xl">
-          <Award size={18} className="text-blue-600 dark:text-blue-400" />
-          <div className="text-left">
-            <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">Desil Sosial</p>
-            <p className="text-xs font-bold text-blue-700 dark:text-blue-300">Desil {desil}</p>
-          </div>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+          Halo, {displayNama}!
+        </h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+          {maskedNik}
+        </p>
       </div>
 
       {/* Hero Banner */}
@@ -107,7 +96,7 @@ export async function DashboardContent() {
       </div>
 
       {/* Data Kependudukan Terverifikasi Card */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm px-5 py-4">
+      <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-white/50 dark:border-slate-700 shadow-sm px-5 py-4">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
             <ShieldCheck size={22} className="text-green-600 dark:text-green-400" />
@@ -138,7 +127,7 @@ export async function DashboardContent() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Layanan KTP & Dukcapil */}
         <Link href="/dashboard/layanan-ktp" className="group">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-5 flex flex-col items-center gap-3 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-700 transition-all duration-200 cursor-pointer">
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-white/50 dark:border-slate-700 shadow-sm p-5 flex flex-col items-center gap-3 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-700 transition-all duration-200 cursor-pointer">
             <div className="w-24 h-24 relative">
               <Image
                 src="/ktp-dukcapil-icon.png"
@@ -161,7 +150,7 @@ export async function DashboardContent() {
 
         {/* Layanan Desil & Bansos */}
         <Link href="/dashboard/layanan-bansos" className="group">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-5 flex flex-col items-center gap-3 hover:shadow-md hover:border-green-200 dark:hover:border-green-700 transition-all duration-200 cursor-pointer">
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-white/50 dark:border-slate-700 shadow-sm p-5 flex flex-col items-center gap-3 hover:shadow-md hover:border-green-200 dark:hover:border-green-700 transition-all duration-200 cursor-pointer">
             <div className="w-24 h-24 relative">
               <Image
                 src="/bansos-desil-icon.png"

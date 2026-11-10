@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -20,10 +19,10 @@ import { useTheme } from "next-themes";
 
 const navItems = [
   { href: "/dashboard", label: "Beranda", icon: Home },
-  { href: "/dashboard/layanan-ktp", label: "Layanan KTP & Dukcapil", icon: CreditCard },
-  { href: "/dashboard/layanan-bansos", label: "Layanan Bansos & Desil", icon: Users },
+  { href: "/dashboard/layanan-ktp", label: "Layanan KTP &\nDukcapil", icon: CreditCard },
+  { href: "/dashboard/layanan-bansos", label: "Layanan Bansos &\nDesil", icon: Users },
   { href: "/dashboard/pengajuan", label: "Pengajuan Saya", icon: FileText },
-  { href: "/dashboard/notifikasi", label: "Notifikasi", icon: Bell },
+  { href: "/dashboard/notifikasi", label: "Nontifikasi", icon: Bell },
   { href: "/dashboard/profil", label: "Profil", icon: User },
 ];
 
@@ -44,87 +43,109 @@ export function DashboardSidebar() {
   };
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-[152px] bg-[#1a237e] flex flex-col z-30 shadow-2xl">
-      {/* Logo */}
-      <div className="flex items-center justify-center pt-6 pb-4 px-3">
-        <div className="flex items-center gap-2">
-          <Image
-            src="/garuda.png"
-            alt="Garuda"
-            width={28}
-            height={28}
-            className="object-contain"
-          />
-          <div className="w-px h-6 bg-white/30" />
-          <div className="flex items-center gap-1">
-            <Image
-              src="/logo.png"
-              alt="Gov-Hub Logo"
-              width={18}
-              height={18}
-              className="object-contain"
-            />
-            <span className="text-white font-bold text-xs leading-tight">
-              GOV-<span className="text-[#FFD700]">HUB</span>
-            </span>
-          </div>
-        </div>
-      </div>
-
+    <aside className="fixed left-0 top-0 h-screen w-[152px] bg-[#0E3F9A] dark:bg-[#091E45] flex flex-col justify-between z-30 shadow-2xl overflow-hidden select-none">
       {/* Nav items */}
-      <nav className="flex-1 flex flex-col gap-0.5 px-2 pt-3">
+      <nav className="flex flex-col mt-4 gap-1 px-2 pt-3">
         {navItems.map(({ href, label, icon: Icon }) => {
-          const isActive = pathname === href;
+          const isActive =
+            pathname === href ||
+            (href !== "/dashboard" && pathname.startsWith(href));
           return (
             <Link
               key={href}
               href={href}
               className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
                 isActive
-                  ? "bg-white/20 text-white font-semibold"
-                  : "text-white/70 hover:bg-white/10 hover:text-white"
+                  ? "bg-white/20 text-white font-semibold shadow-inner"
+                  : "text-white/80 hover:bg-white/10 hover:text-white"
               }`}
             >
               <Icon
                 size={18}
-                className={`flex-shrink-0 ${isActive ? "text-white" : "text-white/70 group-hover:text-white"}`}
+                className={`flex-shrink-0 ${
+                  isActive ? "text-white" : "text-white/80 group-hover:text-white"
+                }`}
               />
-              <span className="text-[11px] leading-tight">{label}</span>
+              <span className="text-[11px] leading-tight whitespace-pre-line font-medium">
+                {label}
+              </span>
             </Link>
           );
         })}
       </nav>
 
-      {/* Bottom actions */}
-      <div className="px-2 pb-6 flex flex-col gap-1">
-        {/* Dark mode toggle */}
-        <button
-          onClick={() => setTheme(isDark ? "light" : "dark")}
-          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-white/70 hover:bg-white/10 hover:text-white transition-all duration-200 text-left w-full cursor-pointer"
-          aria-label="Toggle theme"
-        >
-          {isDark ? (
-            <Sun size={18} className="flex-shrink-0 text-amber-300" />
-          ) : (
-            <Moon size={18} className="flex-shrink-0 text-white/70" />
-          )}
-          <span className="text-[11px] font-medium leading-tight">
-            {isDark ? "Mode Terang" : "Mode Gelap"}
-          </span>
-        </button>
+      {/* Bottom actions container with floating translucent card & Map watermark */}
+      <div className="relative px-2 pb-3 flex flex-col gap-2 z-10">
+        {/* Floating rounded card */}
+        <div className="bg-white/15 backdrop-blur-md border border-white/20 rounded-2xl p-1.5 flex flex-col gap-0.5 shadow-md">
+          {/* Dark mode toggle */}
+          <button
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-white/90 hover:bg-white/10 hover:text-white transition-all duration-200 text-left w-full cursor-pointer"
+            aria-label="Toggle theme"
+          >
+            {isDark ? (
+              <Sun size={17} className="flex-shrink-0 text-amber-300" />
+            ) : (
+              <Moon size={17} className="flex-shrink-0 text-amber-300 fill-amber-300" />
+            )}
+            <span className="text-[11px] font-medium leading-tight">Dark Mode</span>
+          </button>
 
-        {/* Logout button */}
-        <button
-          onClick={handleLogout}
-          disabled={loggingOut}
-          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-red-300/80 hover:bg-red-500/20 hover:text-red-200 transition-all duration-200 text-left w-full cursor-pointer disabled:opacity-50"
-          aria-label="Keluar"
-        >
-          <LogOut size={18} className="flex-shrink-0 text-red-400" />
-          <span className="text-[11px] font-medium leading-tight">
-            {loggingOut ? "Keluar..." : "Keluar"}
-          </span>
-        </button>
+          {/* Logout button */}
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-rose-300 hover:bg-rose-500/20 hover:text-rose-200 transition-all duration-200 text-left w-full cursor-pointer disabled:opacity-50"
+            aria-label="Keluar"
+          >
+            <LogOut size={17} className="flex-shrink-0 text-[#FF6B6B]" />
+            <span className="text-[11px] font-medium leading-tight">
+              {loggingOut ? "Keluar..." : "Keluar"}
+            </span>
+          </button>
+        </div>
+
+        {/* Indonesia map outline watermark at the bottom of sidebar */}
+        <div className="opacity-30 px-1 pt-1 pointer-events-none select-none">
+          <svg
+            viewBox="0 0 140 45"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-full text-white"
+          >
+            {/* Sumatra */}
+            <path
+              d="M5 28C10 20 18 16 26 23C22 28 14 34 5 28Z"
+              fill="currentColor"
+              opacity="0.7"
+            />
+            {/* Java */}
+            <path
+              d="M26 36C34 34 46 33 55 35C45 38 34 38 26 36Z"
+              fill="currentColor"
+              opacity="0.8"
+            />
+            {/* Kalimantan */}
+            <path
+              d="M40 18C42 12 52 10 56 16C58 24 50 26 44 24C40 22 39 20 40 18Z"
+              fill="currentColor"
+              opacity="0.75"
+            />
+            {/* Sulawesi */}
+            <path
+              d="M66 16C70 14 74 18 72 23C70 26 73 30 76 31C74 33 71 31 69 27C67 25 65 20 66 16Z"
+              fill="currentColor"
+              opacity="0.8"
+            />
+            {/* Papua */}
+            <path
+              d="M98 22C104 16 114 15 125 21C122 27 114 30 106 28C100 27 96 24 98 22Z"
+              fill="currentColor"
+              opacity="0.75"
+            />
+          </svg>
+        </div>
       </div>
     </aside>
   );

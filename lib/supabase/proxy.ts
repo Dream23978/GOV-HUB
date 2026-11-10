@@ -34,23 +34,21 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  const { data } = await supabase.auth.getClaims();
-  const user = data?.claims;
+  // Gunakan getUser() yang valid & selaras dengan Server Components
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const pathname = request.nextUrl.pathname;
 
-  // Jika user belum login dan mengakses halaman yang diproteksi (misal /dashboard)
-  if (
-    !user &&
-    pathname !== "/" &&
-    !pathname.startsWith("/auth") &&
-    !pathname.startsWith("/login")
-  ) {
+  // 1. Jika user belum login dan mengakses halaman dashboard/layanan yang diproteksi
+  if (!user && pathname.startsWith("/dashboard")) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);
   }
 
-  // Jika user sudah login dan mencoba membuka halaman login atau sign-up
+  // 2. Jika user sudah login dan mencoba membuka halaman login atau pendaftaran
   if (user && (pathname === "/auth/login" || pathname === "/auth/sign-up")) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";

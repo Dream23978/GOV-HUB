@@ -4,16 +4,19 @@ import { Suspense, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ForgotPasswordLayout } from "@/app/components/forgot-password/ForgotPasswordLayout";
 import ScrollAnimate from "@/app/components/ScrollAnimate";
+import { createClient } from "@/lib/supabase/client";
+import { verifyPasswordResetOtpAction } from "@/app/actions/auth";
 
 function VerifyOtpContent() {
   const searchParams = useSearchParams();
-  const email = searchParams.get("email") ?? ""; // ambil email dari URL query (?email=...)
+  const email = searchParams.get("email") ?? "";
   const router = useRouter();
 
-  const [otp, setOtp] = useState<string[]>(["", "", "", "", ""]); // menyimpan 5 digit OTP
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]); // referensi ke setiap input box untuk kontrol fokus
+  const [otp, setOtp] = useState<string[]>(["", "", "", "", ""]);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // update nilai digit OTP pada index tertentu & otomatis pindah fokus ke box berikutnya
   const handleChange = (index: number, value: string) => {
     if (!/^\d?$/.test(value)) return;
     const newOtp = [...otp];
@@ -24,14 +27,12 @@ function VerifyOtpContent() {
     }
   };
 
-  // saat Backspace ditekan pada box kosong, fokus kembali ke box sebelumnya
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
 
-  // handle paste: ekstrak hanya angka, isi semua box sekaligus
   const handlePaste = (e: React.ClipboardEvent) => {
     const paste = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 5);
     if (!paste) return;
@@ -40,16 +41,33 @@ function VerifyOtpContent() {
     inputRefs.current[Math.min(paste.length, 4)]?.focus();
   };
 
-  // dipanggil saat form submit — TODO(backend): ganti dengan verifikasi OTP ke Supabase/API
-  // Contoh: const { error } = await supabase.auth.verifyOtp({ email, token: otp.join(""), type: "recovery" })
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO(backend): ganti isi ini dengan verifikasi OTP ke Supabase/API
-    // Contoh Supabase:
-    //   const code = otp.join("");
-    //   const { error } = await supabase.auth.verifyOtp({ email, token: code, type: "recovery" });
-    //   if (error) { tampilkan error; return; }
-    router.push("/auth/forgot-password/reset"); // navigasi ke halaman reset setelah OTP valid
+    const code = otp.join("");
+    if (code.length < 5) {
+      setErrorMsg("Masukkan 5 digit kode OTP.");
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg("");
+
+    try {
+      // 1. Verifikasi kode OTP di database via Server Action
+      const res = await verifyPasswordResetOtpAction(email, code);
+      if (!res.success) {
+        setErrorMsg(res.error || "Kode verifikasi salah atau kedaluwarsa.");
+        setLoading(false);
+        return;
+      }
+
+      // 2. Berhasil diverifikasi, lanjut ke halaman penetapan kata sandi baru
+      router.push(`/auth/forgot-password/reset?email=${encodeURIComponent(email)}`);
+    } catch {
+      router.push(`/auth/forgot-password/reset?email=${encodeURIComponent(email)}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -64,6 +82,12 @@ function VerifyOtpContent() {
           masukkan kode 5 digit yang disebutkan dalam email
         </p>
       </ScrollAnimate>
+
+      {errorMsg && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl">
+          {errorMsg}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         {/* OTP boxes */}
@@ -89,9 +113,10 @@ function VerifyOtpContent() {
         <ScrollAnimate direction="up" duration={0.5} delay={0.25}>
           <button
             type="submit"
-            className="w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition-colors duration-200 text-sm"
+            disabled={loading}
+            className="w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition-colors duration-200 text-sm cursor-pointer disabled:opacity-70"
           >
-            Lanjutkan
+            {loading ? "Memverifikasi..." : "Lanjutkan"}
           </button>
         </ScrollAnimate>
       </form>

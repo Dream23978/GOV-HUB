@@ -18,6 +18,8 @@ export interface Profile {
   kota: string | null;
   provinsi: string | null;
   nomor_telepon: string | null;
+  email?: string | null;
+  password_hash?: string | null;
   role: UserRole;
   desil_saat_ini: number;
   created_at?: string;

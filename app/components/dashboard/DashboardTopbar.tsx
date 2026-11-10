@@ -45,15 +45,21 @@ export async function DashboardTopbar() {
     .slice(0, 2);
 
   return (
-    <header className="h-[60px] bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-6 shadow-sm">
+    <header className=" relative h-[60px] bg-white/70 dark:bg-slate-800/70 backdrop-blur-md border-b border-white/30 dark:border-slate-700 flex items-center justify-between px-6 shadow-sm">
       {/* Left: Brand logo */}
+       {/* 1. Foto Background */}
+        <img 
+          src="/navbar.png" 
+          alt="Navbar Background" 
+          className="absolute inset-0 w-full h-full object-cover -z-10 "
+        />
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
           <Image
-            src="/garuda.png"
+            src="/garuda (2).png"
             alt="Garuda Indonesia"
-            width={32}
-            height={32}
+            width={50}
+            height={50}
             className="object-contain"
           />
           <div className="w-px h-7 bg-gray-300 dark:bg-slate-600" />
@@ -61,11 +67,11 @@ export async function DashboardTopbar() {
             <Image
               src="/logo.png"
               alt="Gov-Hub"
-              width={22}
-              height={22}
+              width={80}
+              height={80}
               className="object-contain"
             />
-            <span className="text-gray-800 dark:text-white font-bold text-lg">
+            <span className="text-gray-800 dark:text-white font-bold text-2xl">
               GOV-<span className="text-blue-600">HUB</span>
             </span>
           </div>
