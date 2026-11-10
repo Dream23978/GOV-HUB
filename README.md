@@ -5,7 +5,7 @@
 
 ---
 
-## 👥 Informasi Tim & Pengembang
+## 👥 Informasi Tim & Pengembang 
 
 * **Nama Tim**: *[Nama Tim Anda]*
 * **Daftar Anggota Tim**:
