@@ -137,6 +137,9 @@ CREATE TABLE IF NOT EXISTS public.password_resets (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   identifier character varying NOT NULL,
   token character varying NOT NULL,
+  reset_token character varying,
+  attempts integer NOT NULL DEFAULT 0,
+  used_at timestamp with time zone,
   expires_at timestamp with time zone NOT NULL,
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT password_resets_pkey PRIMARY KEY (id)
@@ -146,8 +149,26 @@ CREATE TABLE IF NOT EXISTS public.password_resets (
 -- 5. ROW LEVEL SECURITY (RLS) & POLICIES
 -- ========================================================
 
+-- Helper SECURITY DEFINER untuk mengecek role tanpa memicu infinite recursion di RLS profiles
+CREATE OR REPLACE FUNCTION public.is_staff()
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role IN ('admin', 'petugas')
+  );
+$$;
+
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.password_resets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ktp_submissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.desil_submissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.biometric_schedules ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 CREATE POLICY "Users can view own profile"
@@ -157,7 +178,8 @@ USING (auth.uid() = id);
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile"
 ON public.profiles FOR UPDATE
-USING (auth.uid() = id);
+USING (auth.uid() = id)
+WITH CHECK (auth.uid() = id);
 
 DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 CREATE POLICY "Users can insert own profile"
@@ -167,6 +189,109 @@ WITH CHECK (auth.uid() = id);
 DROP POLICY IF EXISTS "Admins and officers can view all profiles" ON public.profiles;
 CREATE POLICY "Admins and officers can view all profiles"
 ON public.profiles FOR SELECT
+USING (public.is_staff());
+
+-- Cegah warga biasa menaikkan role, mengubah desil, atau mengganti NIK miliknya sendiri
+CREATE OR REPLACE FUNCTION public.guard_profile_sensitive_columns()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF auth.uid() IS NOT NULL AND NOT public.is_staff() THEN
+    NEW.role := OLD.role;
+    NEW.desil_saat_ini := OLD.desil_saat_ini;
+    NEW.nik := OLD.nik;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_guard_profile_columns ON public.profiles;
+CREATE TRIGGER trg_guard_profile_columns
+  BEFORE UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.guard_profile_sensitive_columns();
+
+-- password_resets: hanya boleh diakses oleh service_role di backend (tanpa policy anon/authenticated)
+DROP POLICY IF EXISTS "Allow anon insert and select password resets" ON public.password_resets;
+
+-- Kebijakan RLS untuk ktp_submissions
+DROP POLICY IF EXISTS "Users can view own ktp submissions" ON public.ktp_submissions;
+CREATE POLICY "Users can view own ktp submissions"
+ON public.ktp_submissions FOR SELECT
+USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own ktp submissions" ON public.ktp_submissions;
+CREATE POLICY "Users can insert own ktp submissions"
+ON public.ktp_submissions FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins and officers can manage all ktp submissions" ON public.ktp_submissions;
+CREATE POLICY "Admins and officers can manage all ktp submissions"
+ON public.ktp_submissions FOR ALL
+USING (public.is_staff());
+
+-- Kebijakan RLS untuk desil_submissions
+DROP POLICY IF EXISTS "Users can view own desil submissions" ON public.desil_submissions;
+CREATE POLICY "Users can view own desil submissions"
+ON public.desil_submissions FOR SELECT
+USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own desil submissions" ON public.desil_submissions;
+CREATE POLICY "Users can insert own desil submissions"
+ON public.desil_submissions FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins and officers can manage all desil submissions" ON public.desil_submissions;
+CREATE POLICY "Admins and officers can manage all desil submissions"
+ON public.desil_submissions FOR ALL
+USING (public.is_staff());
+
+-- Kebijakan RLS untuk notifications
+DROP POLICY IF EXISTS "Users can view own notifications" ON public.notifications;
+CREATE POLICY "Users can view own notifications"
+ON public.notifications FOR SELECT
+USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own notifications" ON public.notifications;
+CREATE POLICY "Users can update own notifications"
+ON public.notifications FOR UPDATE
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins and officers can manage all notifications" ON public.notifications;
+CREATE POLICY "Admins and officers can manage all notifications"
+ON public.notifications FOR ALL
+USING (public.is_staff());
+
+-- Kebijakan RLS untuk biometric_schedules
+DROP POLICY IF EXISTS "Anyone can view active biometric schedules" ON public.biometric_schedules;
+CREATE POLICY "Anyone can view active biometric schedules"
+ON public.biometric_schedules FOR SELECT
+USING (true);
+
+DROP POLICY IF EXISTS "Admins and officers can manage biometric schedules" ON public.biometric_schedules;
+CREATE POLICY "Admins and officers can manage biometric schedules"
+ON public.biometric_schedules FOR ALL
+USING (public.is_staff());
+
+-- Kebijakan RLS untuk ktp_submissions
+ALTER TABLE public.ktp_submissions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own ktp submissions" ON public.ktp_submissions;
+CREATE POLICY "Users can view own ktp submissions"
+ON public.ktp_submissions FOR SELECT
+USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own ktp submissions" ON public.ktp_submissions;
+CREATE POLICY "Users can insert own ktp submissions"
+ON public.ktp_submissions FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins and officers can manage all ktp submissions" ON public.ktp_submissions;
+CREATE POLICY "Admins and officers can manage all ktp submissions"
+ON public.ktp_submissions FOR ALL
 USING (
   EXISTS (
     SELECT 1 FROM public.profiles p
@@ -174,17 +299,12 @@ USING (
   )
 );
 
-DROP POLICY IF EXISTS "Allow anon insert and select password resets" ON public.password_resets;
-CREATE POLICY "Allow anon insert and select password resets"
-ON public.password_resets FOR ALL
-USING (true)
-WITH CHECK (true);
-
 -- Izin Skema Publik
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL ROUTINES IN SCHEMA public TO anon, authenticated, service_role;
+REVOKE ALL ON public.password_resets FROM anon, authenticated;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
 
 -- ========================================================

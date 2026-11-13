@@ -22,7 +22,7 @@ const navItems = [
   { href: "/dashboard/layanan-ktp", label: "Layanan KTP &\nDukcapil", icon: CreditCard },
   { href: "/dashboard/layanan-bansos", label: "Layanan Bansos &\nDesil", icon: Users },
   { href: "/dashboard/pengajuan", label: "Pengajuan Saya", icon: FileText },
-  { href: "/dashboard/notifikasi", label: "Nontifikasi", icon: Bell },
+  { href: "/dashboard/notifikasi", label: "Notifikasi", icon: Bell },
   { href: "/dashboard/profil", label: "Profil", icon: User },
 ];
 
@@ -43,7 +43,8 @@ export function DashboardSidebar() {
   };
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-[152px] bg-[#0E3F9A] dark:bg-[#091E45] flex flex-col justify-between z-30 shadow-2xl overflow-hidden select-none">
+    <>
+      <aside className="hidden md:flex fixed left-0 top-0 h-screen w-[152px] bg-[#0E3F9A] dark:bg-[#091E45] flex-col justify-between z-30 shadow-2xl overflow-hidden select-none">
       {/* Nav items */}
       <nav className="flex flex-col mt-4 gap-1 px-2 pt-3">
         {navItems.map(({ href, label, icon: Icon }) => {
@@ -148,5 +149,54 @@ export function DashboardSidebar() {
         </div>
       </div>
     </aside>
+
+    {/* Mobile Bottom Navigation Bar (visible below md screens) */}
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0E3F9A]/95 dark:bg-[#091E45]/95 backdrop-blur-md border-t border-white/20 px-2 py-1 flex items-center justify-around shadow-2xl select-none">
+      {navItems.slice(0, 5).map(({ href, icon: Icon }) => {
+        const isActive =
+          pathname === href ||
+          (href !== "/dashboard" && pathname.startsWith(href));
+        const shortLabel =
+          href === "/dashboard"
+            ? "Beranda"
+            : href.includes("ktp")
+            ? "KTP"
+            : href.includes("bansos")
+            ? "Bansos"
+            : href.includes("pengajuan")
+            ? "Pengajuan"
+            : "Notif";
+
+        return (
+          <Link
+            key={href}
+            href={href}
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
+              isActive
+                ? "text-white font-bold bg-white/20 scale-105"
+                : "text-white/70 hover:text-white"
+            }`}
+          >
+            <Icon size={18} />
+            <span className="text-[9px] mt-0.5 leading-tight font-medium">
+              {shortLabel}
+            </span>
+          </Link>
+        );
+      })}
+
+      {/* Quick mobile theme toggle */}
+      <button
+        onClick={() => setTheme(isDark ? "light" : "dark")}
+        className="flex flex-col items-center justify-center py-1 px-2 text-amber-300 hover:text-amber-200 transition-all cursor-pointer"
+        aria-label="Toggle theme"
+      >
+        {isDark ? <Sun size={18} /> : <Moon size={18} className="fill-amber-300" />}
+        <span className="text-[9px] mt-0.5 leading-tight text-white/70 font-medium">
+          Tema
+        </span>
+      </button>
+    </nav>
+    </>
   );
 }

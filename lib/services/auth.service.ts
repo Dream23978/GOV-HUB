@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { upsertProfile, getProfileById, findProfileByIdentifier } from "./profile.service";
 import { sendOtpEmail } from "./email.service";
 import { Profile } from "@/types/database";
+import { cookies } from "next/headers";
 import crypto from "crypto";
 
 /**
@@ -182,10 +183,16 @@ export async function signUpWithNik({
   namaLengkap,
 }: SignUpParams): Promise<AuthResponse<{ user: unknown; profile: Profile | null }>> {
   const cleanNik = nik.trim();
+  if (!/^\d{16}$/.test(cleanNik)) {
+    return { success: false, error: "NIK harus terdiri dari 16 digit angka." };
+  }
+  if (!password || password.length < 8) {
+    return { success: false, error: "Kata sandi minimal harus 8 karakter." };
+  }
   const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailPhone.trim());
   const phoneNumber = !isEmail ? emailPhone.trim() : null;
   const contactEmail = isEmail ? emailPhone.trim() : null;
-  const resolvedNama = namaLengkap?.trim() || `Warga ${cleanNik.slice(-4)}`;
+  const resolvedNama = (namaLengkap?.trim() || `Warga ${cleanNik.slice(-4)}`).slice(0, 120);
 
   // JIKA USER INPUT EMAIL ASLI: DAFTARKAN DENGAN EMAIL ASLI TERSEBUT
   // Hanya gunakan format internal jika user murni memasukkan nomor telepon
@@ -193,6 +200,21 @@ export async function signUpWithNik({
   const passwordHash = hashPassword(password);
 
   const adminClient = createAdminClient();
+
+  // Pastikan NIK belum digunakan oleh akun lain sebelum membuat akun baru
+  if (adminClient) {
+    const { data: existingNik } = await adminClient
+      .from("profiles")
+      .select("id")
+      .eq("nik", cleanNik)
+      .maybeSingle();
+    if (existingNik) {
+      return {
+        success: false,
+        error: "NIK atau Email ini sudah terdaftar. Silakan gunakan menu Masuk.",
+      };
+    }
+  }
 
   // 1. Jika ada SUPABASE_SERVICE_ROLE_KEY di .env.local, gunakan admin API
   if (adminClient) {
@@ -362,8 +384,7 @@ export async function signOut() {
  * Service meminta kode reset password (OTP)
  * Mendeteksi akun & NIK pemilik berdasarkan input Email, No HP, atau NIK.
  */
-export async function requestPasswordReset(contact: string): Promise<AuthResponse<{ email: string; nik?: string; otp?: string }>> {
-  const supabase = await createClient();
+export async function requestPasswordReset(contact: string): Promise<AuthResponse<{ email: string; nik?: string }>> {
   const trimmed = contact.trim();
 
   // 1. Deteksi akun warga dari tabel profiles & auth
@@ -380,42 +401,41 @@ export async function requestPasswordReset(contact: string): Promise<AuthRespons
     };
   }
 
-  const authEmail = resolvedNik ? nikToAuthEmail(resolvedNik) : (resolvedEmail || "");
   const targetSendEmail = resolvedEmail || (trimmed.includes("@") ? trimmed : null);
 
-  // Generate 5 digit kode OTP acak (10000 - 99999)
-  const otpCode = Math.floor(10000 + Math.random() * 90000).toString();
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // Berlaku 15 menit
-
-  // Simpan OTP ke tabel public.password_resets dengan NIK dan Email yang terkait
-  try {
-    const recordsToInsert = [
-      { identifier: trimmed, token: otpCode, expires_at: expiresAt },
-    ];
-    if (resolvedNik && resolvedNik !== trimmed) {
-      recordsToInsert.push({ identifier: resolvedNik, token: otpCode, expires_at: expiresAt });
-    }
-    if (authEmail && authEmail !== trimmed) {
-      recordsToInsert.push({ identifier: authEmail, token: otpCode, expires_at: expiresAt });
-    }
-    if (targetSendEmail && targetSendEmail !== trimmed) {
-      recordsToInsert.push({ identifier: targetSendEmail, token: otpCode, expires_at: expiresAt });
-    }
-
-    await supabase.from("password_resets").insert(recordsToInsert);
-  } catch (dbErr) {
-    console.warn("Notice: Gagal insert password_resets ke database:", dbErr);
+  // Tabel password_resets hanya boleh diakses server (service role), bukan anon
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return { success: false, error: "Konfigurasi server belum lengkap (SUPABASE_SERVICE_ROLE_KEY)." };
   }
 
-  // Tampilkan di terminal server secara informatif & lengkap dengan data akun yang terdeteksi
-  console.log("\n=======================================================");
-  console.log("🔐 [GOV-HUB KODE OTP LUPA PASSWORD]");
-  console.log(`🆔 Akun NIK   : ${resolvedNik || "(Terhubung via email)"}`);
-  console.log(`👤 Nama Warga : ${profile?.nama_lengkap || "Warga Terdaftar"}`);
-  console.log(`📧 Kirim ke   : ${targetSendEmail || "Tidak ada email kontak terdaftar"}`);
-  console.log(`🔑 Kode OTP   : ${otpCode}`);
-  console.log("⏰ Berlaku    : 15 Menit");
-  console.log("=======================================================\n");
+  // Cooldown 60 detik per identifier agar OTP tidak bisa di-spam / di-brute-force via request ulang
+  const { data: lastReq } = await adminClient
+    .from("password_resets")
+    .select("created_at")
+    .eq("identifier", trimmed)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (lastReq && Date.now() - new Date(lastReq.created_at).getTime() < 60_000) {
+    return { success: false, error: "Tunggu 1 menit sebelum meminta kode OTP baru." };
+  }
+
+  // OTP 5 digit dari CSPRNG
+  const otpCode = crypto.randomInt(10000, 100000).toString();
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // Berlaku 15 menit
+
+  // Satu OTP aktif per identifier; disimpan dalam bentuk hash
+  await adminClient.from("password_resets").delete().eq("identifier", trimmed);
+  const { error: insertErr } = await adminClient
+    .from("password_resets")
+    .insert({ identifier: trimmed, token: hashPassword(otpCode), expires_at: expiresAt });
+  if (insertErr) {
+    console.error("Gagal menyimpan OTP:", insertErr.message);
+    return { success: false, error: "Gagal membuat kode OTP. Coba lagi nanti." };
+  }
+
+  console.log(`[OTP] Kode reset dibuat untuk ${profile?.nama_lengkap || "warga"} (berlaku 15 menit)`);
 
   // Kirim email sungguhan via Resend jika alamat email tujuan valid
   if (targetSendEmail) {
@@ -430,10 +450,12 @@ export async function requestPasswordReset(contact: string): Promise<AuthRespons
     data: {
       email: trimmed,
       nik: resolvedNik || undefined,
-      otp: otpCode,
     },
   };
 }
+
+const RESET_COOKIE = "gov_pw_reset";
+const MAX_OTP_ATTEMPTS = 5;
 
 /**
  * Service memverifikasi token OTP 5 digit pemulihan kata sandi
@@ -445,85 +467,109 @@ export async function verifyPasswordResetOtp({
   email: string;
   token: string;
 }): Promise<AuthResponse<{ verified: boolean }>> {
-  const supabase = await createClient();
   const cleanToken = token.trim();
-  const cleanEmail = email.trim();
-  const authEmail = /^\d{16}$/.test(cleanEmail) ? nikToAuthEmail(cleanEmail) : cleanEmail;
+  const identifier = email.trim();
+  const invalid = { success: false, error: "Kode OTP salah atau telah kedaluwarsa. Silakan periksa kembali." };
 
-  // 1. Periksa kode OTP di tabel public.password_resets
-  try {
-    const { data: resetRecords } = await supabase
-      .from("password_resets")
-      .select("*")
-      .or(`identifier.eq.${cleanEmail},identifier.eq.${authEmail}`)
-      .eq("token", cleanToken)
-      .gte("expires_at", new Date().toISOString())
-      .order("created_at", { ascending: false })
-      .limit(1);
+  const adminClient = createAdminClient();
+  if (!adminClient || !/^\d{5}$/.test(cleanToken)) return invalid;
 
-    if (resetRecords && resetRecords.length > 0) {
-      return {
-        success: true,
-        data: { verified: true },
-      };
-    }
-  } catch (err) {
-    console.warn("Notice checking password_resets:", err);
+  const { data: row } = await adminClient
+    .from("password_resets")
+    .select("id, token, attempts")
+    .eq("identifier", identifier)
+    .is("used_at", null)
+    .gte("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!row) return invalid;
+  if (row.attempts >= MAX_OTP_ATTEMPTS) {
+    return { success: false, error: "Terlalu banyak percobaan. Silakan minta kode OTP baru." };
   }
 
-  // 2. Coba periksa via Supabase auth.verifyOtp
-  try {
-    const { data, error } = await supabase.auth.verifyOtp({
-      email: authEmail,
-      token: cleanToken,
-      type: "recovery",
-    });
-
-    if (!error && data?.user) {
-      return { success: true, data: { verified: true } };
-    }
-  } catch {
-    // Lanjut ke fallback
+  const a = Buffer.from(row.token);
+  const b = Buffer.from(hashPassword(cleanToken));
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    await adminClient.from("password_resets").update({ attempts: row.attempts + 1 }).eq("id", row.id);
+    return invalid;
   }
 
-  // 3. Fallback keamanan: jika kode 5 digit diinput lengkap
-  if (cleanToken.length === 5 && /^\d+$/.test(cleanToken)) {
-    return {
-      success: true,
-      data: { verified: true },
-    };
-  }
+  // OTP benar -> terbitkan token reset sekali pakai, hanya disimpan di cookie httpOnly
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  await adminClient
+    .from("password_resets")
+    .update({ reset_token: hashPassword(resetToken), attempts: MAX_OTP_ATTEMPTS })
+    .eq("id", row.id);
 
-  return {
-    success: false,
-    error: "Kode OTP salah atau telah kedaluwarsa. Silakan periksa kembali.",
-  };
+  (await cookies()).set(RESET_COOKIE, resetToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+    maxAge: 15 * 60,
+  });
+
+  return { success: true, data: { verified: true } };
 }
 
 /**
- * Service memperbarui kata sandi baru
+ * Service memperbarui kata sandi baru.
+ * Hanya bisa dipakai oleh: user yang sedang login (akun sendiri), atau
+ * pemegang cookie reset yang diterbitkan setelah OTP valid.
+ * Parameter email diabaikan (tidak dipercaya), dipertahankan agar pemanggil lama tetap kompatibel.
  */
 export async function updateUserPassword(
   newPassword: string,
-  emailFallback?: string
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _emailFromClient?: string
 ): Promise<AuthResponse<{ updated: boolean }>> {
+  if (
+    !newPassword ||
+    newPassword.length < 8 ||
+    !/[A-Z]/.test(newPassword) ||
+    !/[a-z]/.test(newPassword) ||
+    !/[0-9]/.test(newPassword)
+  ) {
+    return {
+      success: false,
+      error: "Kata sandi baru minimal 8 karakter dengan kombinasi huruf besar, huruf kecil, dan angka.",
+    };
+  }
   const supabase = await createClient();
   const newHash = hashPassword(newPassword);
+  const cookieStore = await cookies();
+  const resetToken = cookieStore.get(RESET_COOKIE)?.value;
 
-  // 1. Coba update via session aktif pengguna (jika recovery session Supabase aktif)
-  const { error: sessionError } = await supabase.auth.updateUser({
-    password: newPassword,
-  });
-
-  if (!sessionError) {
-    console.log("[UPDATE PASSWORD SUCCESS] Password berhasil diperbarui via session pengguna.");
-    return { success: true, data: { updated: true } };
+  // 1. User yang sedang login mengganti password akunnya sendiri
+  if (!resetToken) {
+    const { error: sessionError } = await supabase.auth.updateUser({ password: newPassword });
+    if (!sessionError) return { success: true, data: { updated: true } };
+    return { success: false, error: "Sesi reset password tidak valid atau kedaluwarsa. Silakan ulangi dari awal." };
   }
 
-  // 2. Gunakan Admin Client untuk update langsung akun warga
+  // 2. Alur lupa password: validasi token reset sekali pakai
   const adminClient = createAdminClient();
-  if (adminClient && emailFallback) {
-    const cleanIdentifier = emailFallback.trim();
+  if (!adminClient) {
+    return { success: false, error: "Konfigurasi server belum lengkap (SUPABASE_SERVICE_ROLE_KEY)." };
+  }
+
+  const { data: resetRow } = await adminClient
+    .from("password_resets")
+    .select("id, identifier")
+    .eq("reset_token", hashPassword(resetToken))
+    .is("used_at", null)
+    .gte("expires_at", new Date().toISOString())
+    .maybeSingle();
+
+  if (!resetRow) {
+    cookieStore.delete(RESET_COOKIE);
+    return { success: false, error: "Sesi reset password tidak valid atau kedaluwarsa. Silakan ulangi dari awal." };
+  }
+
+  {
+    const cleanIdentifier = resetRow.identifier.trim();
     let targetUserId: string | null = null;
 
     // A. Cari ID user di tabel profiles menggunakan hak akses Admin
@@ -605,18 +651,16 @@ export async function updateUserPassword(
         console.warn("Notice: Gagal update password_hash di profiles:", syncErr);
       }
 
+      // Tandai token reset telah terpakai dan hapus cookie
+      await adminClient
+        .from("password_resets")
+        .update({ used_at: new Date().toISOString() })
+        .eq("id", resetRow.id);
+      cookieStore.delete(RESET_COOKIE);
+
       console.log(`[UPDATE PASSWORD SUCCESS] Password berhasil diperbarui untuk User ID: ${targetUserId}`);
       return { success: true, data: { updated: true } };
     }
-  }
-
-  // 3. Jika admin client tidak ada dan session tidak ada
-  if (!adminClient) {
-    console.error("[UPDATE PASSWORD FAILED] SUPABASE_SERVICE_ROLE_KEY belum dipasang di .env.local");
-    return {
-      success: false,
-      error: "Kunci SUPABASE_SERVICE_ROLE_KEY belum dipasang di .env.local untuk mengizinkan reset password.",
-    };
   }
 
   return {

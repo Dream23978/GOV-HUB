@@ -4,7 +4,6 @@ import { Suspense, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ForgotPasswordLayout } from "@/app/components/forgot-password/ForgotPasswordLayout";
 import ScrollAnimate from "@/app/components/ScrollAnimate";
-import { createClient } from "@/lib/supabase/client";
 import { verifyPasswordResetOtpAction } from "@/app/actions/auth";
 
 function VerifyOtpContent() {

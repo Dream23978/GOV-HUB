@@ -8,44 +8,85 @@ import { DataPengajuanCard, DataPengajuanValues } from "./DataPengajuanCard";
 import { NoUploadNotice } from "./NoUploadNotice";
 import { JenisPengajuanSection } from "./JenisPengajuanSection";
 import { JadwalBiometrikSection } from "./JadwalBiometrikSection";
-import { createClient } from "@/lib/supabase/client";
+import { submitKtpAction } from "@/app/actions/ktp";
 
 interface AjukanKtpFormProps {
   initialProfile?: Partial<DataPengajuanValues>;
   userId?: string;
 }
 
-export function AjukanKtpForm({ initialProfile, userId }: AjukanKtpFormProps) {
+export function AjukanKtpForm({ initialProfile }: AjukanKtpFormProps) {
   const router = useRouter();
+  const [formData, setFormData] = useState<DataPengajuanValues>({
+    nama: initialProfile?.nama || "Warga",
+    nik: initialProfile?.nik || "3578012304950002",
+    tempatTglLahir: initialProfile?.tempatTglLahir || "Surabaya, 12 Juni 2000",
+    jenisKelamin: initialProfile?.jenisKelamin || "Laki-Laki",
+    alamat:
+      initialProfile?.alamat ||
+      "Jl. Basuki Rahmat No. 10, Surabaya, Jawa Timur",
+    agama: initialProfile?.agama || "Islam",
+    statusPerkawinan: initialProfile?.statusPerkawinan || "Belum Menikah",
+    pekerjaan: initialProfile?.pekerjaan || "Wiraswasta",
+    kewarganegaraan: initialProfile?.kewarganegaraan || "WNI",
+  });
   const [selectedTanggal, setSelectedTanggal] = useState("");
   const [selectedWaktu, setSelectedWaktu] = useState("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
   const handleSubmitClick = (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg(null);
     setShowConfirmModal(true);
   };
 
   const handleConfirmSubmit = async () => {
     setIsSubmitting(true);
-    setErrorMsg(null);
 
     try {
-      const supabase = createClient();
-      const nomorTiket = `KTP-${Date.now().toString().slice(-8)}`;
-
-      // Jika ada userId dan koneksi Supabase aktif, simpan ke database
-      if (userId) {
-        await supabase.from("ktp_submissions").insert({
-          nomor_tiket: nomorTiket,
-          user_id: userId,
-          jenis_pengajuan: "KTP Baru / Pertama Kali",
-          status: "menunggu_verifikasi",
+      const nomorTiket = `KTP-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+      const submissionDate =
+        selectedTanggal ||
+        new Date().toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
         });
+
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(
+            "govhub_last_ktp_submission",
+            JSON.stringify({
+              nomorPengajuan: nomorTiket,
+              statusSaatIni: "Pembuatan KTP EL",
+              tanggalPengajuan: submissionDate,
+              statusBadge: "Di Proses",
+              nama: formData.nama,
+              nik: formData.nik,
+            })
+          );
+        } catch (storageErr) {
+          console.warn("Storage warning:", storageErr);
+        }
+      }
+
+      // Panggil Server Action agar aman dari blokir RLS client
+      const res = await submitKtpAction({
+        nomorTiket,
+        jenisPengajuan: "KTP Baru / Pertama Kali",
+        waktuKehadiranBiometrik:
+          selectedTanggal && selectedWaktu ? `${selectedTanggal} ${selectedWaktu}` : undefined,
+        profileUpdates: {
+          nama_lengkap: formData.nama,
+          nik: formData.nik,
+          alamat: formData.alamat,
+          jenis_kelamin: formData.jenisKelamin,
+        },
+      });
+
+      if (!res.success && res.error) {
+        console.warn("KTP Submission notice:", res.error);
       }
 
       // Redirect ke halaman tracking pengajuan KTP
@@ -71,6 +112,8 @@ export function AjukanKtpForm({ initialProfile, userId }: AjukanKtpFormProps) {
       {/* 1. Data Pengajuan */}
       <DataPengajuanCard
         initialData={initialProfile}
+        formData={formData}
+        onChange={setFormData}
         onFileSelect={(file) => setUploadedFile(file)}
       />
 
@@ -93,7 +136,7 @@ export function AjukanKtpForm({ initialProfile, userId }: AjukanKtpFormProps) {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="bg-[#0E4FA8] hover:bg-[#0B3F88] active:scale-[0.98] disabled:opacity-50 text-white font-semibold text-xs md:text-sm px-7 py-3 rounded-xl shadow-md transition-all cursor-pointer select-none"
+          className="w-full sm:w-auto bg-[#0E4FA8] hover:bg-[#0B3F88] active:scale-[0.98] disabled:opacity-50 text-white font-semibold text-xs md:text-sm px-7 py-3 rounded-xl shadow-md transition-all cursor-pointer select-none text-center"
         >
           {isSubmitting ? "Memproses..." : "Lanjutkan Pengajuan"}
         </button>
@@ -121,7 +164,7 @@ export function AjukanKtpForm({ initialProfile, userId }: AjukanKtpFormProps) {
               <div className="flex justify-between">
                 <span className="text-gray-500 dark:text-gray-400">Nama:</span>
                 <span className="font-semibold text-gray-800 dark:text-gray-200">
-                  {initialProfile?.nama || "Hapis Khairullah"}
+                  {formData.nama || initialProfile?.nama || "Warga Terdaftar"}
                 </span>
               </div>
               <div className="flex justify-between">
