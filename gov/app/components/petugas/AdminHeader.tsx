@@ -1,0 +1,72 @@
+﻿"use client";
+
+import React from "react";
+import Image from "next/image";
+import { Building2, Menu } from "lucide-react";
+
+interface AdminHeaderProps {
+  instansiName?: string;
+  roleBadge?: string;
+  adminName?: string;
+  onToggleSidebar?: () => void;
+}
+
+export function AdminHeader({
+  instansiName = "Dinas Sosial",
+  roleBadge = "Admin Kecamatan & Kota",
+  adminName = "Petugas Desil 14",
+  onToggleSidebar,
+}: AdminHeaderProps) {
+  return (
+    <header className="w-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-gray-200/80 dark:border-slate-700/80 px-4 sm:px-6 py-3 flex items-center justify-between shadow-2xs select-none sticky top-0 z-10">
+      {/* Brand Logo in Header & Mobile Hamburger */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {onToggleSidebar && (
+          <button
+            type="button"
+            onClick={onToggleSidebar}
+            className="md:hidden p-1.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+            aria-label="Buka Menu Navigasi"
+          >
+            <Menu size={22} />
+          </button>
+        )}
+
+        <div className="w-8 h-8 rounded-full bg-[#1b3a6b] text-white flex items-center justify-center shadow-xs">
+          <Building2 size={16} />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="font-extrabold text-lg md:text-xl text-[#1b3a6b] dark:text-blue-400 tracking-tight">
+            GOV-HUB
+          </span>
+          <span className="hidden sm:inline-block px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800">
+            {instansiName}
+          </span>
+        </div>
+      </div>
+
+      {/* Right: Officer Profile Info & Avatar */}
+      <div className="flex items-center gap-3">
+        <div className="hidden sm:flex flex-col text-right">
+          <span className="text-xs font-bold text-gray-900 dark:text-white leading-tight">
+            {adminName}
+          </span>
+          <span className="text-[10px] text-gray-500 dark:text-gray-400">
+            {roleBadge}
+          </span>
+        </div>
+
+        <div className="relative w-9 h-9 rounded-full overflow-hidden border-2 border-red-500 shadow-sm flex-shrink-0 bg-gray-100">
+          <Image
+            src="/admin-avatar.png"
+            alt="Avatar Petugas"
+            fill
+            sizes="36px"
+            className="object-cover"
+            priority
+          />
+        </div>
+      </div>
+    </header>
+  );
+}
