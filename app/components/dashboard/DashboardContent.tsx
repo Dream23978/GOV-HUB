@@ -57,8 +57,6 @@ export async function DashboardContent() {
     .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(" ");
 
-  const desil = profile?.desil_saat_ini ?? 5;
-
   return (
     <div className="flex flex-col gap-6 w-full">
       {/* Greeting */}

@@ -21,13 +21,13 @@ export default function ProtectedLayout({
       <DashboardSidebar />
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col ml-[152px]">
+      <div className="flex-1 flex flex-col md:ml-[152px] ml-0 min-w-0 transition-all">
         {/* Topbar */}
         <DashboardTopbar />
 
         {/* Page content — Centered horizontally */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 flex justify-center">
-          <div className="w-full max-w-2xl mx-auto">
+        <main className="flex-1 overflow-y-auto p-3.5 sm:p-6 md:p-8 pb-24 md:pb-8 flex justify-center">
+          <div className="w-full max-w-4xl mx-auto min-w-0">
             {children}
           </div>
         </main>

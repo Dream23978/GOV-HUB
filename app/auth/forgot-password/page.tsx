@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ForgotPasswordLayout } from "@/app/components/forgot-password/ForgotPasswordLayout";
 import ScrollAnimate from "@/app/components/ScrollAnimate";
-import Link from "next/link";
 import { requestPasswordResetAction } from "@/app/actions/auth";
 
 export default function ForgotPasswordPage() {

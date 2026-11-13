@@ -31,22 +31,31 @@ async function getProfileData() {
 export default async function AjukanKtpPage() {
   const profileData = await getProfileData();
   const profile = profileData?.profile;
+  const user = profileData?.user;
 
-  // Nilai awal: gunakan data profil Supabase jika ada, atau fallback ke data desain screenshot
+  const fallbackNama =
+    profile?.nama_lengkap ||
+    user?.user_metadata?.nama_lengkap ||
+    user?.user_metadata?.full_name ||
+    "Warga";
+  const fallbackNik = profile?.nik || user?.user_metadata?.nik || "3578012304950002";
+  const fallbackAlamat =
+    profile?.alamat ||
+    "Jl. Basuki Rahmat No. 10, Kel. Embong Kaliasin, Kec. Genteng, Kota Surabaya";
+
+  // Nilai awal: gunakan data profil asli Supabase
   const initialProfile = {
-    nama: profile?.nama_lengkap || "Ferdian Iswara",
-    nik: profile?.nik || "6105438987667002",
+    nama: fallbackNama,
+    nik: fallbackNik,
     tempatTglLahir:
       profile?.tempat_lahir && profile?.tanggal_lahir
         ? `${profile.tempat_lahir}, ${profile.tanggal_lahir}`
-        : "Singkawang, 12 Juni 2004",
+        : "Surabaya, 12 Juni 2000",
     jenisKelamin: profile?.jenis_kelamin || "Laki-Laki",
-    alamat:
-      profile?.alamat ||
-      "Jl. Tj. Raya II Gg. Karya 1,\nSaigon, Kec. Pontianak\nTim., Kota Pontianak.",
+    alamat: fallbackAlamat,
     agama: "Islam",
     statusPerkawinan: "Belum Menikah",
-    pekerjaan: "Wirasuasta",
+    pekerjaan: profile?.role === "warga" ? "Wiraswasta" : "Karyawan",
     kewarganegaraan: "WNI",
   };
 
