@@ -11,8 +11,8 @@
 * **Daftar Anggota Tim**:
   1. **Agung Saputra** (231230003@unmuhpnk.ac.id) — Backend & Security Engineering
   2. **Ferdian Iswara** (231230043@unmuhpnk.ac.id) — Frontend Engineering
-  3. **Ade Tio Denari** (231230031@unmuhpnk.ac.id) — Data Analyst & UI Designer
-  4. **Muhammad Borneo Satria Prawira Putra** (231230011@unmuhpnk.ac.id) — Data Analyst & UI Designer
+  3. **Ade Tio Denari** (231230031@unmuhpnk.ac.id) — System Analyst & UI Designer
+  4. **Muhammad Borneo Satria Prawira Putra** (231230011@unmuhpnk.ac.id) — System Analyst & UI Designer
 
 ---
 
@@ -183,7 +183,7 @@ npm start
 
 ## 🔑 Akun Demonstrasi & Pengujian (Demo Accounts)
 
-### 1. Akun Aparatur & Administrator (Login di [`/admin/login`](file:///home/agung/AKU/LOMBA/lomba-to-surabaya-sementara/gov/app/admin/login/page.tsx))
+### 1. Akun Aparatur & Administrator (Login di https://gov-hub-sage.vercel.app/admin))
 > **Password Default Seluruh Akun Admin/Petugas:** `admin123`
 
 | Peran Aparatur | NIP (18 Digit) | Password | Nama & Email | Instansi & Wilayah | Akses Portal |
@@ -196,8 +196,8 @@ npm start
 
 ---
 
-### 2. Akun Warga Terdaftar (Login di [`/auth/login`](file:///home/agung/AKU/LOMBA/lomba-to-surabaya-sementara/gov/app/auth/login/page.tsx))
-> **Rekomendasi Akun Uji Utama (Full Auto-Fill):** Gunakan akun **Rizky Pratama Putra** (`6171011708940001` / `Warga12345`) yang seluruh kolom profil kependudukan & DTKS-nya sudah terisi lengkap di database.
+### 2. Akun Warga Terdaftar (Login di https://gov-hub-sage.vercel.app/))
+> 
 
 | Nama Lengkap | NIK (16 Digit) | Password | Email / Kontak | Desil Saat Ini | Wilayah & Keterangan |
 | :--- | :---: | :---: | :--- | :---: | :--- |
@@ -209,8 +209,8 @@ npm start
 | **Siti Rahmawati** | `3578016508920015` | *(Sesuai registrasi / reset via Admin)* | `0857-1122-3344` | **Desil 1** *(Miskin Ekstrem)* | Kec. Pontianak Kota, Kota Pontianak |
 | **Ahmad Subarjo** | `3578010807790018` | *(Sesuai registrasi / reset via Admin)* | `ahmad.subarjo@warga.surabaya.go.id` | **Desil 5** *(Menengah Bawah)* | Kec. Pontianak Kota, Kota Pontianak |
 
-> **Tips Pengujian Cepat:**  
-> - Anda juga dapat membuat akun warga baru kapan saja melalui halaman **[`/auth/sign-up`](file:///home/agung/AKU/LOMBA/lomba-to-surabaya-sementara/gov/app/auth/sign-up/page.tsx)**.  
+
+>   
 > - Admin Pusat (`198905142014021005`) dapat mereset kata sandi akun warga atau petugas mana pun secara langsung melalui menu **Manajemen Akun** (`/admin/dashboard/manajemen-akun`).
 
 ---
@@ -225,6 +225,7 @@ npm start
   - Sinkronisasi master klasifikasi Desil 1–10 dan penyusunan dokumentasi teknis komprehensif.
 
 ---
+
 
 ## 📄 Lisensi & Atribusi
 
