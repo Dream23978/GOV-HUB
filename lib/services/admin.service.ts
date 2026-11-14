@@ -73,6 +73,7 @@ export interface DesilAdminRow {
   pendapatan?: string;
   alasan?: string;
   housePhoto?: string;
+  dokumenPendukungUrl?: string;
   lokasi?: string;
   userId?: string;
   nik?: string;
@@ -194,6 +195,7 @@ export async function getAdminDesilSubmissions(): Promise<{
         pendapatan: formattedPendapatan,
         alasan: alasanClean,
         housePhoto: item.foto_rumah_depan_url || "",
+        dokumenPendukungUrl: item.bukti_slip_gaji_url || "",
         lokasi: profile?.alamat || "-",
         userId: item.user_id,
         nik: profile?.nik,

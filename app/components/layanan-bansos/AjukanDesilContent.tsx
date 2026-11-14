@@ -103,6 +103,20 @@ export function AjukanDesilContent({
       const parsedTanggungan = parseInt(keluargaData.anggotaKeluarga.replace(/\D/g, "")) || initialTanggungan || 0;
       const targetDesil = initialDesil > 0 ? Math.max(1, initialDesil - 2) : 1;
 
+      // Upload file dokumen pendukung jika ada
+      let fileUrl: string | undefined = undefined;
+      if (uploadedFile) {
+        try {
+          const { uploadPrivateDocument } = await import("@/lib/upload-document");
+          const uploadRes = await uploadPrivateDocument(uploadedFile, "bansos");
+          if (uploadRes?.success && uploadRes.signedUrl) {
+            fileUrl = uploadRes.signedUrl;
+          }
+        } catch (uploadErr) {
+          console.warn("Upload document fallback:", uploadErr);
+        }
+      }
+
       // Simpan ke database Supabase
       const { submitDesilAction } = await import("@/app/actions/bansos");
       const res = await submitDesilAction({
@@ -115,6 +129,7 @@ export function AjukanDesilContent({
         pengeluaranBulanan: Math.round(parsedPendapatan * 0.9),
         alasan: "Kondisi ekonomi menurun",
         fotoRumahDepanUrl: housePhoto || undefined,
+        buktiSlipGajiUrl: fileUrl,
       });
 
       if (!res?.success) {

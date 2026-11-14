@@ -62,6 +62,7 @@ export function mapDesilRowsToSubmissionCards(rows: DesilAdminRow[]) {
       pendapatan: item.pendapatan,
       alasan: item.alasan,
       housePhoto: item.housePhoto,
+      dokumenPendukungUrl: item.dokumenPendukungUrl,
       lokasi: item.lokasi,
     };
   });

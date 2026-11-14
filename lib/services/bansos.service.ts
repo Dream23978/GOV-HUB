@@ -23,6 +23,7 @@ export interface CreateDesilSubmissionParams {
   alasan?: string;
   keterangan?: string;
   fotoRumahDepanUrl?: string;
+  buktiSlipGajiUrl?: string;
 }
 
 /**
@@ -70,6 +71,7 @@ export async function createDesilSubmission(
       penghasilan_bulanan: params.penghasilanBulanan ?? 0,
       pengeluaran_bulanan: params.pengeluaranBulanan ?? 0,
       foto_rumah_depan_url: params.fotoRumahDepanUrl || null,
+      bukti_slip_gaji_url: params.buktiSlipGajiUrl || null,
       catatan_verifikasi: catatanAwal || null,
       status: "menunggu_verifikasi" as const,
     };

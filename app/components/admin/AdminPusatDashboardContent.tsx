@@ -19,6 +19,8 @@ import {
   Sparkles,
   ArrowRight,
   ShieldCheck,
+  ExternalLink,
+  Paperclip,
 } from "lucide-react";
 import { updateDesilSubmissionStatusAction, updateKtpSubmissionStatusAction } from "@/app/actions/admin";
 import { getDesilBadgeClass, useLiveDesilSync } from "@/lib/hooks/useLiveDesilSync";
@@ -41,6 +43,7 @@ export interface DesilRow {
   pendapatan?: string;
   alasan?: string;
   housePhoto?: string;
+  dokumenPendukungUrl?: string;
   lokasi?: string;
 }
 
@@ -931,6 +934,45 @@ export function AdminPusatDashboardContent({
                   <span className="truncate">{selectedDesil.lokasi || "-"}</span>
                 </div>
               </div>
+            </div>
+
+            {/* Dokumen Pendukung Verifikasi Warga */}
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 space-y-2">
+              <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-1.5">
+                <Paperclip size={13} className="text-[#0084FF]" />
+                Dokumen Pendukung Verifikasi Warga
+              </span>
+              {selectedDesil.dokumenPendukungUrl ? (
+                <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-[#0084FF] flex items-center justify-center flex-shrink-0">
+                      <FileText size={16} />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate block">
+                        Berkas_Pendukung_Desil_{selectedDesil.nomor}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block">
+                        Terlampir oleh pemohon saat pengajuan
+                      </span>
+                    </div>
+                  </div>
+                  <a
+                    href={selectedDesil.dokumenPendukungUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#0084FF] hover:bg-blue-600 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer flex-shrink-0"
+                  >
+                    <span>Buka File</span>
+                    <ExternalLink size={12} />
+                  </a>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white/50 dark:bg-slate-900/40 border border-dashed border-slate-200 dark:border-white/10 text-xs text-slate-400">
+                  <FileText size={14} className="opacity-50" />
+                  <span>Tidak ada file berkas tambahan yang diunggah pemohon</span>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10">

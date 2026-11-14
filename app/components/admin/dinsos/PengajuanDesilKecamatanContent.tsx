@@ -37,6 +37,7 @@ export interface PengajuanDesilRow {
   pendapatan?: string;
   alasan?: string;
   housePhoto?: string;
+  dokumenPendukungUrl?: string;
   lokasi?: string;
 }
 

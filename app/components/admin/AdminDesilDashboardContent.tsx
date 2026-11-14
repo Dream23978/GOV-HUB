@@ -34,6 +34,7 @@ export interface SubmissionRow {
   pendapatan?: string;
   alasan?: string;
   housePhoto?: string;
+  dokumenPendukungUrl?: string;
   lokasi?: string;
 }
 
