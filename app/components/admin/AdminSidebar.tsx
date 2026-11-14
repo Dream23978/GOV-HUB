@@ -17,6 +17,7 @@ import {
   IdCard,
   Handshake,
   UserCog,
+  FileUp,
   X,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -42,6 +43,12 @@ export function AdminSidebar({
   const { theme, setTheme } = useTheme();
   const isDark = theme === "dark";
 
+  // Dukcapil Kecamatan: Fitur Upload Blangko Dihilangkan sesuai instruksi user
+  // Dukcapil Kota: Memiliki menu Upload Blangko KTP
+  const isDukcapilKecamatan =
+    instansi === "dukcapil" &&
+    (basePath.includes("/kecamatan") || (roleTitle && roleTitle.toLowerCase().includes("kecamatan")));
+
   // Menu navigasi: Pusat menggabungkan KTP dan Desil sesuai spesifikasi mockup
   const navItems =
     instansi === "pusat"
@@ -61,9 +68,18 @@ export function AdminSidebar({
           { href: `${basePath}/warga`, label: "Data Warga", icon: Users },
           { href: `${basePath}/pengaturan`, label: "Pengaturan", icon: Settings },
         ]
+      : isDukcapilKecamatan
+      ? [
+          { href: basePath, label: "Beranda", icon: Home },
+          { href: `${basePath}/pengajuan`, label: "Pengajuan KTP", icon: CreditCard },
+          { href: `${basePath}/laporan`, label: "Laporan Penduduk", icon: FileText },
+          { href: `${basePath}/warga`, label: "Data Warga", icon: Users },
+          { href: `${basePath}/pengaturan`, label: "Pengaturan", icon: Settings },
+        ]
       : [
           { href: basePath, label: "Beranda", icon: Home },
           { href: `${basePath}/pengajuan`, label: "Pengajuan KTP", icon: CreditCard },
+          { href: `${basePath}/upload-blangko`, label: "Upload Blangko", icon: FileUp },
           { href: `${basePath}/laporan`, label: "Laporan Penduduk", icon: FileText },
           { href: `${basePath}/warga`, label: "Data Warga", icon: Users },
           { href: `${basePath}/pengaturan`, label: "Pengaturan", icon: Settings },
@@ -130,8 +146,10 @@ export function AdminSidebar({
             {navItems.map(({ href, label, icon: Icon }, idx) => {
               const isHome = idx === 0;
               const isActive = isHome
-                ? pathname === href || pathname === `${href}/` || pathname.endsWith("/dashboard")
-                : pathname === href || pathname.startsWith(`${href}/`);
+                ? pathname === href || pathname === `${href}/` || (pathname.endsWith("/dashboard") && href.endsWith("/dashboard"))
+                : pathname === href ||
+                  pathname.startsWith(`${href}/`) ||
+                  (href.endsWith("/upload-blangko") && (pathname.includes("/upload-blangko") || pathname.includes("/blangko")));
 
               return (
                 <Link

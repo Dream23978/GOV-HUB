@@ -9,6 +9,7 @@ import {
   X,
   Clock,
   ChevronDown,
+  Upload,
 } from "lucide-react";
 import { updateKtpSubmissionStatusAction } from "@/app/actions/admin";
 
@@ -179,9 +180,21 @@ export function AdminDukcapilDashboardContent({
 
       {/* ── Section 1: Ringkasan Pelayanan ── */}
       <div className="mb-6">
-        <h2 className="text-sm font-bold text-gray-900 dark:text-white mb-3">
-          Ringkasan Pelayanan KTP
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <h2 className="text-sm font-bold text-gray-900 dark:text-white">
+            Ringkasan Pelayanan KTP
+          </h2>
+          {canManageBlangko && (
+            <button
+              type="button"
+              onClick={() => router.push("/admin/dukcapil/kota/dashboard/upload-blangko")}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-[#0084FF] text-xs font-semibold border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer"
+            >
+              <Upload size={14} />
+              <span>Upload Data Blangko</span>
+            </button>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-blue-200/90 dark:border-slate-700 shadow-2xs p-4 flex items-center justify-between">
@@ -486,6 +499,17 @@ export function AdminDukcapilDashboardContent({
                       </div>
                     </div>
                   </label>
+
+                  <div className="pt-2 border-t border-slate-200 dark:border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => router.push("/admin/dukcapil/kota/dashboard/upload-blangko")}
+                      className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
+                    >
+                      <Upload size={12} />
+                      <span>Upload & Kelola Data Blangko &rarr;</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

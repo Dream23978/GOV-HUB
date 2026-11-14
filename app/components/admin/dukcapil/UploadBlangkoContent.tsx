@@ -12,26 +12,43 @@ import {
   Building,
 } from "lucide-react";
 
-interface BlangkoAllocationRow {
+export interface BlangkoAllocationRow {
   nama: string;
   kuota: number;
   terpakai: number;
   sisa: number;
 }
 
-interface UploadBlangkoContentProps {
+export interface UploadBlangkoContentProps {
   initialTotalStock?: number;
   initialDistributed?: number;
   initialAllocations?: BlangkoAllocationRow[];
 }
 
+const DEFAULT_ALLOCATIONS: BlangkoAllocationRow[] = [
+  { nama: "Kecamatan Pontianak Kota", kuota: 1200, terpakai: 840, sisa: 360 },
+  { nama: "Kecamatan Pontianak Barat", kuota: 1000, terpakai: 620, sisa: 380 },
+  { nama: "Kecamatan Pontianak Selatan", kuota: 900, terpakai: 510, sisa: 390 },
+  { nama: "Kecamatan Pontianak Tenggara", kuota: 700, terpakai: 430, sisa: 270 },
+  { nama: "Kecamatan Pontianak Timur", kuota: 600, terpakai: 390, sisa: 210 },
+  { nama: "Kecamatan Pontianak Utara", kuota: 600, terpakai: 350, sisa: 250 },
+];
+
 export function UploadBlangkoContent({
-  initialTotalStock = 0,
-  initialDistributed = 0,
-  initialAllocations = [],
+  initialTotalStock = 14250,
+  initialDistributed = 3140,
+  initialAllocations,
 }: UploadBlangkoContentProps = {}) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [totalStock, setTotalStock] = useState<number>(initialTotalStock || 14250);
+  const [distributedStock] = useState<number>(initialDistributed || 3140);
+  const [allocations] = useState<BlangkoAllocationRow[]>(
+    initialAllocations && initialAllocations.length > 0
+      ? initialAllocations
+      : DEFAULT_ALLOCATIONS
+  );
 
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -39,25 +56,24 @@ export function UploadBlangkoContent({
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
 
-  const alokasiKecamatan = initialAllocations;
-
+  // Statistik: "Dalam Pengiriman" TELAH DIHAPUS sesuai spesifikasi mockup
+  // 2 metrik utama: Total Ketersediaan & Blangko Terdistribusi
   const stats = [
     {
       label: "Total Ketersediaan Blangko Kota",
-      value: initialTotalStock.toLocaleString("id-ID"),
+      value: totalStock.toLocaleString("id-ID"),
       unit: "keping",
-      badge: initialTotalStock > 0 ? "Status: Tersedia" : "Menunggu Sinkronisasi",
+      badge: "Status: Aman & Mencukupi",
       badgeColor:
-        initialTotalStock > 0
-          ? "text-emerald-700 bg-emerald-50 border-emerald-200"
-          : "text-gray-700 bg-gray-50 border-gray-200",
+        "text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800",
     },
     {
       label: "Blangko Terdistribusi",
-      value: initialDistributed.toLocaleString("id-ID"),
+      value: distributedStock.toLocaleString("id-ID"),
       unit: "keping",
-      badge: `${alokasiKecamatan.length} Wilayah Tercatat`,
-      badgeColor: "text-blue-700 bg-blue-50 border-blue-200",
+      badge: `${allocations.length} Kecamatan Terlayani`,
+      badgeColor:
+        "text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-800",
     },
   ];
 
@@ -71,13 +87,15 @@ export function UploadBlangkoContent({
         if (prev >= 100) {
           clearInterval(interval);
           setIsUploading(false);
+          // Tambahkan kuota simulasi saat berkas berhasil diunggah
+          setTotalStock((current) => current + 2500);
           setSuccessToast(`Berkas "${file.name}" berhasil diunggah ke sistem database blangko!`);
-          setTimeout(() => setSuccessToast(null), 4000);
+          setTimeout(() => setSuccessToast(null), 5000);
           return 100;
         }
         return prev + 25;
       });
-    }, 150);
+    }, 120);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,16 +119,16 @@ export function UploadBlangkoContent({
         <button
           type="button"
           onClick={() => router.back()}
-          className="p-1 -ml-1 text-gray-800 hover:text-black hover:bg-gray-100 rounded-lg transition-colors cursor-pointer mt-0.5"
+          className="p-1 -ml-1 text-gray-800 dark:text-gray-200 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer mt-0.5"
           aria-label="Kembali"
         >
           <ChevronLeft size={28} strokeWidth={2.2} />
         </button>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-tight">
             Blangko KTP
           </h1>
-          <p className="text-xs sm:text-sm text-gray-700 mt-0.5">
+          <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 mt-0.5">
             Selamat datang, Petugas. di Konfirmasi Pembuatan KTP
           </p>
         </div>
@@ -118,15 +136,15 @@ export function UploadBlangkoContent({
 
       {/* Success Notification */}
       {successToast && (
-        <div className="mb-4 p-3.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-xs animate-in fade-in">
+        <div className="mb-4 p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-semibold flex items-center justify-between shadow-xs animate-in fade-in">
           <div className="flex items-center gap-2">
-            <CheckCircle2 size={16} className="text-emerald-600 flex-shrink-0" />
+            <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
             <span>{successToast}</span>
           </div>
           <button
             type="button"
             onClick={() => setSuccessToast(null)}
-            className="text-emerald-700 hover:text-emerald-900 cursor-pointer"
+            className="text-emerald-700 dark:text-emerald-300 hover:text-emerald-900 dark:hover:text-white cursor-pointer"
           >
             <X size={14} />
           </button>
@@ -138,11 +156,11 @@ export function UploadBlangkoContent({
         {stats.map((item) => (
           <div
             key={item.label}
-            className="bg-white rounded-xl border border-gray-300 p-4 shadow-2xs"
+            className="bg-white dark:bg-slate-800 rounded-xl border border-gray-300 dark:border-slate-700 p-4 shadow-2xs"
           >
-            <span className="text-xs text-gray-600 block">{item.label}</span>
-            <span className="text-2xl sm:text-3xl font-extrabold text-[#2563EB] mt-1 block">
-              {item.value} <span className="text-xs font-medium text-gray-500">{item.unit}</span>
+            <span className="text-xs text-gray-600 dark:text-gray-400 block">{item.label}</span>
+            <span className="text-2xl sm:text-3xl font-extrabold text-[#2563EB] dark:text-blue-400 mt-1 block">
+              {item.value} <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{item.unit}</span>
             </span>
             <span
               className={`text-[11px] font-semibold mt-1 inline-block px-2.5 py-0.5 rounded-full border ${item.badgeColor}`}
@@ -162,7 +180,7 @@ export function UploadBlangkoContent({
         }}
         onDragLeave={() => setIsDragOver(false)}
         onDrop={handleDrop}
-        className={`w-full rounded-2xl bg-[#969BA3] hover:bg-[#8D929A] transition-all cursor-pointer p-8 sm:p-12 md:p-14 flex flex-col items-center justify-center min-h-[220px] sm:min-h-[260px] shadow-sm select-none border-2 ${
+        className={`w-full rounded-2xl bg-[#969BA3] hover:bg-[#8D929A] transition-all cursor-pointer p-6 sm:p-10 md:p-14 flex flex-col items-center justify-center min-h-[220px] sm:min-h-[260px] shadow-sm select-none border-2 ${
           isDragOver ? "border-blue-400 bg-[#888E96] scale-[1.01]" : "border-transparent"
         }`}
       >
@@ -213,21 +231,21 @@ export function UploadBlangkoContent({
       </div>
 
       {/* ── Tabel Distribusi Kuota Blangko Kecamatan (Tetap responsif dan informatif) ── */}
-      <div className="mt-6 bg-white rounded-xl border border-gray-300 shadow-2xs overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+      <div className="mt-6 bg-white dark:bg-slate-800 rounded-xl border border-gray-300 dark:border-slate-700 shadow-2xs overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Building size={16} className="text-blue-600" />
-            <h3 className="font-bold text-sm sm:text-base text-gray-900">
+            <Building size={16} className="text-blue-600 dark:text-blue-400" />
+            <h3 className="font-bold text-sm sm:text-base text-gray-900 dark:text-white">
               Distribusi Kuota Blangko ke Kecamatan
             </h3>
           </div>
-          <span className="text-xs text-gray-500 font-medium">
+          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
             Pemutakhiran otomatis
           </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[640px]">
+          <table className="w-full text-left border-collapse min-w-[560px] sm:min-w-[640px]">
             <thead>
               <tr className="bg-[#2563EB] text-white text-xs sm:text-sm font-bold">
                 <th className="py-2.5 px-4">Nama Kecamatan</th>
@@ -237,31 +255,31 @@ export function UploadBlangkoContent({
                 <th className="py-2.5 px-4 text-center">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 text-xs sm:text-sm">
-              {alokasiKecamatan.length === 0 ? (
+            <tbody className="divide-y divide-gray-200 dark:divide-slate-700 text-xs sm:text-sm">
+              {allocations.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 px-4 text-center text-gray-500">
+                  <td colSpan={5} className="py-8 px-4 text-center text-gray-500 dark:text-gray-400">
                     Belum ada data distribusi kuota blangko kecamatan.
                   </td>
                 </tr>
               ) : (
-                alokasiKecamatan.map((row) => (
-                  <tr key={row.nama} className="hover:bg-gray-50/70">
-                    <td className="py-3 px-4 font-semibold text-gray-900 flex items-center gap-1.5">
-                      <Layers size={14} className="text-gray-400" />
+                allocations.map((row) => (
+                  <tr key={row.nama} className="hover:bg-gray-50/70 dark:hover:bg-slate-700/50">
+                    <td className="py-3 px-4 font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">
+                      <Layers size={14} className="text-gray-400 dark:text-gray-500" />
                       <span>{row.nama}</span>
                     </td>
-                    <td className="py-3 px-4 text-center font-bold text-gray-800">
+                    <td className="py-3 px-4 text-center font-bold text-gray-800 dark:text-gray-200">
                       {row.kuota.toLocaleString("id-ID")}
                     </td>
-                    <td className="py-3 px-4 text-center text-gray-700">
+                    <td className="py-3 px-4 text-center text-gray-700 dark:text-gray-300">
                       {row.terpakai.toLocaleString("id-ID")}
                     </td>
-                    <td className="py-3 px-4 text-center font-bold text-blue-700 font-mono">
+                    <td className="py-3 px-4 text-center font-bold text-blue-700 dark:text-blue-400 font-mono">
                       {row.sisa.toLocaleString("id-ID")}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 rounded-full">
                         <CheckCircle2 size={12} /> Siap
                       </span>
                     </td>
