@@ -89,7 +89,7 @@ async function getTrackingPageData() {
     }
 
     return {
-      hasSubmission: !!submission && submission.status !== "selesai",
+      hasSubmission: !!submission,
       isCompleted: submission?.status === "selesai",
       submissionRaw: submission,
       tracking: {
