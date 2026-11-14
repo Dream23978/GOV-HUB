@@ -13,8 +13,19 @@ import {
   ShieldCheck,
   Layers,
 } from "lucide-react";
-import type { VerifiedAdminSession } from "@/lib/services/admin.service";
 import { maskNik } from "@/lib/format";
+
+export interface VerifiedAdminSession {
+  id: string;
+  nik: string;
+  nama: string;
+  email: string | null;
+  role: string;
+  instansi: "dinsos" | "dukcapil" | "pusat";
+  tingkat: "kecamatan" | "kota" | "provinsi" | "pusat";
+  wilayahLabel: string;
+  canApproveFinal: boolean;
+}
 
 interface AdminSettingsContentProps {
   session: VerifiedAdminSession;
