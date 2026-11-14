@@ -70,66 +70,7 @@
 | **Backend & Autentikasi** | [Supabase](https://supabase.com/) | Auth SSR, PostgreSQL database, RLS (Row Level Security), session management |
 | **State & Theme** | `next-themes` | Manajemen tema Light / Dark mode |
 
----
 
-## 🏛️ Diagram Arsitektur Sistem & Alur Data
-
-### 1. Arsitektur Tingkat Tinggi (High-Level Architecture)
-
-```mermaid
-flowchart TD
-    subgraph Client["Frontend Client (Next.js App Router)"]
-        Landing["Landing Page / Portal Publik"]
-        AuthFlow["Alur Autentikasi (Login, Register, Forgot Password)"]
-        Dashboard["Dashboard Warga & Layanan Terpadu"]
-    end
-
-    subgraph SecurityLayer["Edge Proxy & Middleware"]
-        Proxy["proxy.ts / Middleware"]
-        SessionCheck["Session Token & Claims Validation"]
-        RouteGuard["Role-Based Route Isolation"]
-    end
-
-    subgraph Backend["BaaS (Supabase Infrastructure)"]
-        SupaAuth["Supabase GoTrue Auth (Session & OTP)"]
-        PostgreSQL["PostgreSQL Database"]
-        Storage["Storage & Buckets (Dokumen/Foto)"]
-    end
-
-    Client -->|HTTP/HTTPS Request| Proxy
-    Proxy --> SessionCheck
-    SessionCheck --> RouteGuard
-    RouteGuard -->|Authorized Access| Dashboard
-    AuthFlow -->|Auth API Calls| SupaAuth
-    Dashboard -->|Data Queries & Mutate| PostgreSQL
-```
-
-### 2. Alur Data Autentikasi Warga (Authentication Flow)
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Citizen as Warga (Pengguna)
-    participant Client as Web Browser (Next.js Client)
-    participant Validator as Zod Schema Engine
-    participant Proxy as Edge Proxy / Middleware
-    participant Supabase as Supabase Auth & Database
-
-    Citizen->>Client: Input 16 Digit NIK & Kata Sandi
-    Client->>Validator: Validasi Format (Regex, digit, panjang)
-    alt Validasi Gagal
-        Validator-->>Client: Tampilkan Pesan Kesalahan Validasi
-    else Validasi Berhasil
-        Client->>Supabase: signInWithPassword(nik, password)
-        Supabase-->>Client: Set Auth Session Cookie (HTTP-only)
-        Client->>Proxy: Redirect ke /dashboard
-        Proxy->>Supabase: getClaims() / Verifikasi Token Sesi
-        Supabase-->>Proxy: Token Valid & Payload User
-        Proxy-->>Citizen: Tampilkan Halaman Dashboard Warga
-    end
-```
-
----
 
 ## ⚙️ Panduan Instalasi & Menjalankan Aplikasi
 
