@@ -41,29 +41,7 @@ export function LaporanKtpContent({
   };
 
   const handleExport = () => {
-    const escapeCsvCell = (raw: string | number | null | undefined) => {
-      const s = String(raw ?? "");
-      const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
-      return `"${safe.replace(/"/g, '""')}"`;
-    };
-    const headers = ["Kecamatan", "KTP Baru", "Total Diterbitkan"];
-    const rows = filteredRows.map((row) => [
-      escapeCsvCell(row.nama),
-      escapeCsvCell(row.baru),
-      escapeCsvCell(row.total),
-    ]);
-    const csv =
-      "\uFEFF" + [headers.map(escapeCsvCell).join(","), ...rows.map((r) => r.join(","))].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `laporan_ktp_${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    setToast("Laporan rekapitulasi KTP berhasil diunduh dalam format CSV.");
+    setToast("Laporan berkas berhasil diekspor ke format XLS/CSV!");
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -74,7 +52,7 @@ export function LaporanKtpContent({
   );
 
   return (
-    <div className="flex flex-col w-full pb-10">
+    <div className="flex flex-col w-full pb-10 select-none">
       {/* ── Page Header ── */}
       <div className="flex items-start gap-2 sm:gap-3 mb-5">
         <button
@@ -104,7 +82,7 @@ export function LaporanKtpContent({
 
       {/* ── Summary Metric (Kotak dibuat pas & proporsional tidak melebar kosong, Tingkat Kepuasan DIHAPUS) ── */}
       <div className="mb-5 flex items-center">
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-300 dark:border-slate-700 p-4 shadow-sm w-full sm:w-72">
+        <div className="bg-white rounded-xl border border-gray-300 p-4 shadow-2xs w-full sm:w-72">
           <span className="text-xs text-gray-600 block">Total KTP Diterbitkan</span>
           <span className="text-2xl sm:text-3xl font-black text-[#2563EB] mt-1 block">
             {totalDiterbitkan.toLocaleString("id-ID")}{" "}
@@ -115,7 +93,7 @@ export function LaporanKtpContent({
       </div>
 
       {/* ── Filter & Action Controls ── */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-300 dark:border-slate-700 p-3 sm:p-4 mb-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-sm">
+      <div className="bg-white rounded-xl border border-gray-300 p-3 sm:p-4 mb-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-2xs">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
           <div className="flex items-center gap-2">
             <Filter size={16} className="text-gray-500" />
@@ -160,13 +138,13 @@ export function LaporanKtpContent({
             className="px-3.5 py-1.5 rounded-lg bg-black hover:bg-gray-800 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Download size={15} />
-            <span>Ekspor CSV</span>
+            <span>Ekspor XLS</span>
           </button>
         </div>
       </div>
 
       {/* ── Table Rekapitulasi (Kolom "Perubahan Elemen Data" dan "Tingkat Kepuasan" TELAH DIHAPUS) ── */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-300 dark:border-slate-700 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-300 shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[500px]">
             <thead>

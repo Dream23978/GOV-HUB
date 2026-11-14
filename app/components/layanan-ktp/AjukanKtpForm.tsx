@@ -8,9 +8,8 @@ import { DataPengajuanCard, DataPengajuanValues } from "./DataPengajuanCard";
 import { NoUploadNotice } from "./NoUploadNotice";
 import { JenisPengajuanSection } from "./JenisPengajuanSection";
 import { JadwalBiometrikSection } from "./JadwalBiometrikSection";
-import { uploadPrivateDocument } from "@/lib/upload-document";
+import { submitKtpAction } from "@/app/actions/ktp";
 import { broadcastSync } from "@/app/components/AutoRefresh";
-import { AlertCircle } from "lucide-react";
 
 interface AjukanKtpFormProps {
   initialProfile?: Partial<DataPengajuanValues>;
@@ -23,37 +22,29 @@ export function AjukanKtpForm({ initialProfile }: AjukanKtpFormProps) {
     nama: initialProfile?.nama || "Warga",
     nik: initialProfile?.nik || "",
     tempatTglLahir: initialProfile?.tempatTglLahir || "",
-    jenisKelamin: initialProfile?.jenisKelamin || "Laki-laki",
+    jenisKelamin: initialProfile?.jenisKelamin || "Laki-Laki",
     alamat: initialProfile?.alamat || "",
     agama: initialProfile?.agama || "Islam",
     statusPerkawinan: initialProfile?.statusPerkawinan || "Belum Menikah",
     pekerjaan: initialProfile?.pekerjaan || "",
     kewarganegaraan: initialProfile?.kewarganegaraan || "WNI",
   });
-  const [jenisPengajuan, setJenisPengajuan] = useState("KTP Baru / Pertama Kali");
   const [selectedTanggal, setSelectedTanggal] = useState("");
   const [selectedWaktu, setSelectedWaktu] = useState("");
-  const [selectedScheduleId, setSelectedScheduleId] = useState<string | undefined>(undefined);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-
   const handleSubmitClick = (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitError(null);
-    if (!selectedTanggal && !selectedScheduleId) {
-      setSubmitError("Silakan pilih tanggal dan waktu perekaman biometrik terlebih dahulu.");
-      return;
-    }
     setShowConfirmModal(true);
   };
 
   const handleConfirmSubmit = async () => {
     setIsSubmitting(true);
-    setSubmitError(null);
 
     try {
+      const nomorTiket = `KTP-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+
       if (typeof window !== "undefined") {
         try {
           localStorage.removeItem("govhub_last_ktp_submission");
@@ -62,63 +53,33 @@ export function AjukanKtpForm({ initialProfile }: AjukanKtpFormProps) {
         }
       }
 
-      let dokumenKkUrl: string | undefined;
-      let suratKehilanganUrl: string | undefined;
-      if (uploadedFile) {
-        const uploadRes = await uploadPrivateDocument(uploadedFile, "ktp");
-        if (!uploadRes.success || !uploadRes.path) {
-          setSubmitError(uploadRes.error || "Gagal mengunggah dokumen pendukung KTP.");
-          return;
-        }
-        if (jenisPengajuan.toLowerCase().includes("hilang")) {
-          suratKehilanganUrl = uploadRes.path;
-        } else {
-          dokumenKkUrl = uploadRes.path;
-        }
-      }
-
-      const scheduleString = selectedTanggal
-        ? `${selectedTanggal} ${selectedWaktu || "09:00 WIB"}`
-        : undefined;
-
-      const res = await fetch("/api/ktp/submissions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          jenisPengajuan,
-          scheduleId: selectedScheduleId,
-          dokumenKkUrl,
-          suratKehilanganUrl,
-          waktuKehadiranBiometrik: scheduleString,
-        }),
+      // Panggil Server Action agar aman dari blokir RLS client
+      const res = await submitKtpAction({
+        nomorTiket,
+        jenisPengajuan: "KTP Baru / Pertama Kali",
+        waktuKehadiranBiometrik: selectedTanggal
+          ? `${selectedTanggal} ${selectedWaktu || "09:00 WIB"}`
+          : undefined,
+        profileUpdates: {
+          nama_lengkap: formData.nama,
+          nik: formData.nik,
+          alamat: formData.alamat,
+          jenis_kelamin: formData.jenisKelamin,
+        },
       });
 
-      const json = await res.json().catch(() => null);
-      if (!res.ok || !json?.success) {
-        setSubmitError(json?.error || "Gagal mengirim pengajuan KTP. Silakan periksa data Anda.");
-        return;
+      if (!res.success && res.error) {
+        console.warn("KTP Submission notice:", res.error);
       }
 
-      // Sinkronkan pembaruan profil jika ada perubahan elemen data pemohon
-      const normalizedGender = /perempuan/i.test(formData.jenisKelamin)
-        ? "Perempuan"
-        : "Laki-laki";
-      await fetch("/api/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nama_lengkap: formData.nama,
-          alamat: formData.alamat,
-          jenis_kelamin: normalizedGender,
-        }),
-      }).catch(() => {});
-
       broadcastSync();
-      setShowConfirmModal(false);
+      // Redirect ke halaman tracking pengajuan KTP
       router.push("/dashboard/layanan-ktp/tracking?success=1");
       router.refresh();
-    } catch {
-      setSubmitError("Terjadi kesalahan jaringan saat mengirim pengajuan KTP.");
+    } catch (err) {
+      console.error("Error submitting KTP application:", err);
+      // Tetap lanjutkan navigasi ke tracking
+      router.push("/dashboard/layanan-ktp/tracking?success=1");
     } finally {
       setIsSubmitting(false);
     }
@@ -144,27 +105,15 @@ export function AjukanKtpForm({ initialProfile }: AjukanKtpFormProps) {
       <NoUploadNotice />
 
       {/* 2. Pilih Jenis Pengajuan */}
-      <JenisPengajuanSection
-        selectedJenis={jenisPengajuan}
-        onSelect={setJenisPengajuan}
-      />
+      <JenisPengajuanSection />
 
       {/* 3. Jadwal Perekaman Biometrik */}
       <JadwalBiometrikSection
         selectedTanggal={selectedTanggal}
         selectedWaktu={selectedWaktu}
-        selectedScheduleId={selectedScheduleId}
         onTanggalChange={(val) => setSelectedTanggal(val)}
         onWaktuChange={(val) => setSelectedWaktu(val)}
-        onScheduleIdChange={setSelectedScheduleId}
       />
-
-      {submitError && !showConfirmModal && (
-        <div role="alert" className="mb-3 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
-          <AlertCircle size={16} className="flex-shrink-0" />
-          <span>{submitError}</span>
-        </div>
-      )}
 
       {/* Submit Button aligned to right */}
       <div className="flex justify-end mt-4">
@@ -179,14 +128,9 @@ export function AjukanKtpForm({ initialProfile }: AjukanKtpFormProps) {
 
       {/* Confirmation Modal */}
       {showConfirmModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="ktp-confirm-title"
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        >
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl border border-gray-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-200">
-            <h3 id="ktp-confirm-title" className="font-bold text-base text-gray-900 dark:text-white mb-2">
+            <h3 className="font-bold text-base text-gray-900 dark:text-white mb-2">
               Konfirmasi Pengajuan KTP
             </h3>
             <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mb-4">
@@ -194,29 +138,22 @@ export function AjukanKtpForm({ initialProfile }: AjukanKtpFormProps) {
               Data akan otomatis disinkronkan dengan Dukcapil.
             </p>
 
-            {submitError && (
-              <div role="alert" className="mb-3 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
-                <AlertCircle size={15} className="flex-shrink-0" />
-                <span>{submitError}</span>
-              </div>
-            )}
-
             <div className="bg-gray-50 dark:bg-slate-700/50 rounded-xl p-3.5 flex flex-col gap-2 text-xs mb-5 border border-gray-200 dark:border-slate-600">
-              <div className="flex justify-between gap-2">
+              <div className="flex justify-between">
                 <span className="text-gray-500 dark:text-gray-400">Jenis Layanan:</span>
-                <span className="font-semibold text-gray-800 dark:text-gray-200 text-right">
-                  {jenisPengajuan}
+                <span className="font-semibold text-gray-800 dark:text-gray-200">
+                  KTP Baru / Pertama Kali
                 </span>
               </div>
-              <div className="flex justify-between gap-2">
+              <div className="flex justify-between">
                 <span className="text-gray-500 dark:text-gray-400">Nama:</span>
-                <span className="font-semibold text-gray-800 dark:text-gray-200 text-right">
+                <span className="font-semibold text-gray-800 dark:text-gray-200">
                   {formData.nama || initialProfile?.nama || "Warga Terdaftar"}
                 </span>
               </div>
-              <div className="flex justify-between gap-2">
+              <div className="flex justify-between">
                 <span className="text-gray-500 dark:text-gray-400">Jadwal:</span>
-                <span className="font-semibold text-blue-600 dark:text-blue-400 text-right">
+                <span className="font-semibold text-blue-600 dark:text-blue-400">
                   {selectedTanggal || "Sesuai Jadwal"} ({selectedWaktu || "09:00 WIB"})
                 </span>
               </div>

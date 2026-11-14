@@ -10,7 +10,6 @@ interface TrackingPickupCardProps {
   catatan?: string;
   nomorPengajuan?: string;
   statusRaw?: string;
-  catatanPetugas?: string | null;
 }
 
 export function TrackingPickupCard({
@@ -19,7 +18,6 @@ export function TrackingPickupCard({
   catatan = "Bawa diri Anda; tidak perlu membawa fotokopi berkas.",
   nomorPengajuan,
   statusRaw = "menunggu_verifikasi",
-  catatanPetugas,
 }: TrackingPickupCardProps) {
   const [showPetunjukModal, setShowPetunjukModal] = useState(false);
 
@@ -45,9 +43,7 @@ export function TrackingPickupCard({
     : isBiometric
     ? "Berkas Anda telah disetujui. Silakan datang ke lokasi layanan untuk perekaman biometrik."
     : isRejected
-    ? catatanPetugas?.trim()
-      ? `Alasan petugas: ${catatanPetugas.trim()}`
-      : "Silakan periksa kembali data atau ajukan ulang permohonan KTP-el Anda."
+    ? "Silakan periksa kembali data atau ajukan ulang permohonan KTP-el Anda."
     : "Pengajuan KTP-el Anda sedang dalam tahap pemeriksaan berkas oleh petugas Dukcapil.";
 
   const iconBg = isDone
@@ -120,31 +116,21 @@ export function TrackingPickupCard({
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
-          {isRejected ? (
-            <Link
-              href="/dashboard/layanan-ktp/ajukan"
-              className="flex-1 w-full bg-[#0B57D0] hover:bg-[#0947A8] active:scale-[0.99] text-white font-semibold text-xs md:text-sm py-2.5 px-4 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
-            >
-              <FileText size={16} className="text-white/90" />
-              <span>Ajukan Ulang KTP-el</span>
-              <ArrowRight size={16} />
-            </Link>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowPetunjukModal(true)}
-              className="flex-1 w-full bg-[#0B57D0] hover:bg-[#0947A8] active:scale-[0.99] text-white font-semibold text-xs md:text-sm py-2.5 px-4 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
-            >
-              <FileText size={16} className="text-white/90" />
-              <span>Lihat Petunjuk Pengambilan</span>
-              <ArrowRight size={16} />
-            </button>
-          )}
+          {/* Button 1: Lihat Petunjuk Pengambilan */}
+          <button
+            type="button"
+            onClick={() => setShowPetunjukModal(true)}
+            className="flex-1 w-full bg-[#0B57D0] hover:bg-[#0947A8] active:scale-[0.99] text-white font-semibold text-xs md:text-sm py-2.5 px-4 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
+          >
+            <FileText size={16} className="text-white/90" />
+            <span>Lihat Petunjuk Pengambilan</span>
+            <ArrowRight size={16} />
+          </button>
 
           {/* Button 2: Kembali ke Beranda */}
           <Link
             href="/dashboard"
-            className="w-full sm:w-auto border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 font-semibold text-xs md:text-sm py-2.5 px-5 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+            className="w-full sm:w-auto border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 font-semibold text-xs md:text-sm py-2.5 px-5 rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
             <Home size={16} className="text-gray-600 dark:text-gray-300" />
             <span>Kembali ke Beranda</span>
@@ -154,14 +140,9 @@ export function TrackingPickupCard({
 
       {/* Petunjuk Pengambilan Modal */}
       {showPetunjukModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="petunjuk-pickup-title"
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        >
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl border border-gray-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-150">
-            <h3 id="petunjuk-pickup-title" className="font-bold text-base text-gray-900 dark:text-white mb-2">
+            <h3 className="font-bold text-base text-gray-900 dark:text-white mb-2">
               Petunjuk Pengambilan KTP-el
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-4">

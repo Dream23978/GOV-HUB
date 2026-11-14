@@ -16,7 +16,7 @@ export function LayananKtpContent() {
         <KtpServiceCard
           icon={<AjukanKtpIcon />}
           title="Ajukan KTP Baru"
-          description={<p>Ajukan Pembuatan KTP Elektronik</p>}
+          description={<p>Ajukan Pembuatan KTP Eletronik</p>}
           href="/dashboard/layanan-ktp/ajukan"
         />
 

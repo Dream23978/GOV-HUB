@@ -11,7 +11,6 @@ interface AdminDashboardLayoutProps {
   roleTitle: string;
   instansiName: string;
   adminName?: string;
-  wilayahLabel?: string;
   basePath: string;
   showRoleSubtitle?: boolean;
 }
@@ -22,15 +21,25 @@ export function AdminDashboardLayout({
   roleTitle,
   instansiName,
   adminName = "Petugas",
-  wilayahLabel,
   basePath,
   showRoleSubtitle = false,
 }: AdminDashboardLayoutProps) {
+  const [liveAdminName, setLiveAdminName] = React.useState(adminName);
+  const [liveRoleBadge, setLiveRoleBadge] = React.useState(`${instansiName} • ${roleTitle}`);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
 
-  const roleBadge = wilayahLabel
-    ? `${instansiName} • ${roleTitle} (${wilayahLabel})`
-    : `${instansiName} • ${roleTitle}`;
+  React.useEffect(() => {
+    try {
+      const stored = localStorage.getItem("govhub_admin_session");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.nama) setLiveAdminName(parsed.nama);
+        if (parsed.wilayah) setLiveRoleBadge(`${instansiName} • ${roleTitle} (${parsed.wilayah})`);
+      }
+    } catch {
+      // ignore
+    }
+  }, [instansiName, roleTitle]);
 
   return (
     <div
@@ -43,7 +52,8 @@ export function AdminDashboardLayout({
         backgroundAttachment: "fixed",
       }}
     >
-      <AutoRefresh intervalMs={5000} />
+      <AutoRefresh intervalMs={3000} />
+      {/* Sidebar Admin Instansi */}
       <AdminSidebar
         instansi={instansi}
         roleTitle={roleTitle}
@@ -53,15 +63,18 @@ export function AdminDashboardLayout({
         showRoleSubtitle={showRoleSubtitle}
       />
 
+      {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 transition-all">
+        {/* Top Header */}
         <AdminHeader
           instansiName={instansiName}
-          roleBadge={roleBadge}
-          adminName={adminName}
+          roleBadge={liveRoleBadge}
+          adminName={liveAdminName}
           profileHref={`${basePath}/pengaturan`}
           onToggleSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
         />
 
+        {/* Content Body */}
         <main className="flex-1 overflow-y-auto p-3 sm:p-6 md:p-8 flex justify-center">
           <div className="w-full max-w-5xl mx-auto min-w-0">
             {children}
@@ -71,3 +84,4 @@ export function AdminDashboardLayout({
     </div>
   );
 }
+

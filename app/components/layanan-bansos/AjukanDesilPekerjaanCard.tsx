@@ -11,9 +11,9 @@ interface AjukanDesilPekerjaanCardProps {
 }
 
 export function AjukanDesilPekerjaanCard({
-  statusPekerjaan = "-",
-  perubahanTerakhir = "-",
-  verifikasiText = "Data terhubung ke database profil",
+  statusPekerjaan = "Tidak Bekerja",
+  perubahanTerakhir = "Agustus 2026",
+  verifikasiText = "Data berhasil diverifikasi",
   onSave,
 }: AjukanDesilPekerjaanCardProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -21,14 +21,6 @@ export function AjukanDesilPekerjaanCard({
     statusPekerjaan,
     perubahanTerakhir,
   });
-
-  const updateField = (field: keyof typeof data, value: string) => {
-    const next = { ...data, [field]: value };
-    setData(next);
-    if (onSave) {
-      onSave(next);
-    }
-  };
 
   const handleSave = () => {
     setIsEditing(false);
@@ -78,7 +70,7 @@ export function AjukanDesilPekerjaanCard({
             <input
               type="text"
               value={data.statusPekerjaan}
-              onChange={(e) => updateField("statusPekerjaan", e.target.value)}
+              onChange={(e) => setData({ ...data, statusPekerjaan: e.target.value })}
               className="text-right text-xs font-semibold text-gray-900 dark:text-white rounded-md border border-gray-300 dark:border-slate-600 px-2 py-0.5 bg-gray-50 dark:bg-slate-900 focus:outline-none focus:border-blue-500 max-w-[150px]"
             />
           ) : (
@@ -97,7 +89,7 @@ export function AjukanDesilPekerjaanCard({
             <input
               type="text"
               value={data.perubahanTerakhir}
-              onChange={(e) => updateField("perubahanTerakhir", e.target.value)}
+              onChange={(e) => setData({ ...data, perubahanTerakhir: e.target.value })}
               className="text-right text-xs font-semibold text-gray-900 dark:text-white rounded-md border border-gray-300 dark:border-slate-600 px-2 py-0.5 bg-gray-50 dark:bg-slate-900 focus:outline-none focus:border-blue-500 max-w-[150px]"
             />
           ) : (

@@ -50,9 +50,68 @@ interface AdminDesilDashboardContentProps {
   canApprove?: boolean;
 }
 
-import { DESIL_TIERS } from "@/lib/desil";
-
-const DESIL_CRITERIA = DESIL_TIERS;
+const DESIL_CRITERIA = [
+  {
+    level: 1,
+    badgeColor: "bg-red-600 text-white",
+    persen: "10% terbawah",
+    kategori: "Sangat Miskin / Miskin Ekstrem",
+  },
+  {
+    level: 2,
+    badgeColor: "bg-orange-500 text-white",
+    persen: "11–20% terbawah",
+    kategori: "Kategori Miskin",
+  },
+  {
+    level: 3,
+    badgeColor: "bg-amber-500 text-white",
+    persen: "21–30% terbawah",
+    kategori: "Hampir Miskin",
+  },
+  {
+    level: 4,
+    badgeColor: "bg-yellow-500 text-slate-900",
+    persen: "31–40% terbawah",
+    kategori: "Rentan Miskin",
+  },
+  {
+    level: 5,
+    badgeColor: "bg-lime-600 text-white",
+    persen: "41–50% terbawah",
+    kategori: "Menengah Transisi (Penyangga)",
+  },
+  {
+    level: 6,
+    badgeColor: "bg-emerald-600 text-white",
+    persen: "51–60%",
+    kategori: "Kategori Menengah",
+  },
+  {
+    level: 7,
+    badgeColor: "bg-teal-600 text-white",
+    persen: "61–70%",
+    kategori: "Kategori Menengah",
+  },
+  {
+    level: 8,
+    badgeColor: "bg-cyan-600 text-white",
+    persen: "71–80%",
+    kategori: "Menengah Atas",
+  },
+  {
+    level: 9,
+    badgeColor: "bg-blue-600 text-white",
+    persen: "81–90%",
+    kategori: "Mampu / Sejahtera",
+  },
+  {
+    level: 10,
+    badgeColor: "bg-[#1b3a6b] text-white",
+    persen: "10% teratas",
+    kategori: "Kesejahteraan Paling Tinggi",
+  },
+];
 
 export function AdminDesilDashboardContent({
   roleTitle = "Admin Kecamatan & Kota",
@@ -61,13 +120,25 @@ export function AdminDesilDashboardContent({
   canApprove: propCanApprove,
 }: AdminDesilDashboardContentProps) {
   const router = useRouter();
-  const liveWilayah = wilayah;
+  const [liveWilayah, setLiveWilayah] = useState(wilayah);
 
   const roleLower = (roleTitle || "").toLowerCase();
   const isKecamatanOrKota =
     roleLower.includes("kecamatan") || roleLower.includes("kota");
   const canApprove =
     propCanApprove !== undefined ? propCanApprove : !isKecamatanOrKota;
+
+  React.useEffect(() => {
+    try {
+      const stored = localStorage.getItem("govhub_admin_session");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.wilayah) setLiveWilayah(parsed.wilayah);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const [submissions, setSubmissions] = useState<SubmissionRow[]>(() => {
     return initialSubmissions ?? [];
@@ -261,7 +332,7 @@ export function AdminDesilDashboardContent({
         <button
           type="button"
           onClick={() => router.back()}
-          className="w-8 h-8 rounded-full bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 border border-gray-300 dark:border-slate-600 flex items-center justify-center text-gray-700 dark:text-gray-200 mt-0.5 cursor-pointer shadow-sm transition-colors"
+          className="w-8 h-8 rounded-full bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 border border-gray-300 dark:border-slate-600 flex items-center justify-center text-gray-700 dark:text-gray-200 mt-0.5 cursor-pointer shadow-2xs transition-colors"
           aria-label="Kembali"
         >
           <ChevronLeft size={18} strokeWidth={2.5} />
@@ -290,10 +361,10 @@ export function AdminDesilDashboardContent({
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
           {/* Left Card: 24 Pengajuan Masuk */}
-          <div className="md:col-span-4 bg-white dark:bg-slate-800 rounded-2xl border border-blue-200/90 dark:border-slate-700 shadow-sm p-4 flex flex-col justify-between">
+          <div className="md:col-span-4 bg-white dark:bg-slate-800 rounded-2xl border border-blue-200/90 dark:border-slate-700 shadow-2xs p-4 flex flex-col justify-between">
             <div className="flex items-center gap-3.5">
               {/* Circular Inbox Icon */}
-              <div className="w-12 h-12 rounded-full bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center flex-shrink-0 border border-blue-200 shadow-sm">
+              <div className="w-12 h-12 rounded-full bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center flex-shrink-0 border border-blue-200 shadow-xs">
                 <Inbox size={24} strokeWidth={2.2} />
               </div>
 
@@ -315,7 +386,7 @@ export function AdminDesilDashboardContent({
           </div>
 
           {/* Right Card: Klasifikasi Desil 1-10 */}
-          <div className="md:col-span-8 bg-white dark:bg-slate-800 rounded-2xl border border-gray-200/90 dark:border-slate-700 shadow-sm p-3.5 sm:p-4 flex flex-col justify-between">
+          <div className="md:col-span-8 bg-white dark:bg-slate-800 rounded-2xl border border-gray-200/90 dark:border-slate-700 shadow-2xs p-3.5 sm:p-4 flex flex-col justify-between">
             <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-100 dark:border-slate-700/60">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-gray-900 dark:text-white">
@@ -337,7 +408,7 @@ export function AdminDesilDashboardContent({
                   className="flex items-center gap-2 p-1.5 px-2 rounded-xl bg-gray-50/80 dark:bg-slate-700/30 border border-gray-100 dark:border-slate-700/60 text-left"
                 >
                   <span
-                    className={`w-6 h-6 rounded-lg ${item.badgeColor} flex items-center justify-center font-bold text-[11px] shrink-0 shadow-sm`}
+                    className={`w-6 h-6 rounded-lg ${item.badgeColor} flex items-center justify-center font-bold text-[11px] shrink-0 shadow-2xs`}
                   >
                     {item.level}
                   </span>
@@ -350,11 +421,8 @@ export function AdminDesilDashboardContent({
                         ({item.persen})
                       </span>
                     </div>
-                    <p className="text-[11px] text-gray-700 dark:text-gray-200 font-semibold truncate">
+                    <p className="text-[11px] text-gray-600 dark:text-gray-300 font-medium truncate">
                       {item.kategori}
-                    </p>
-                    <p className="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-1">
-                      {item.deskripsi}
                     </p>
                   </div>
                 </div>
@@ -371,7 +439,7 @@ export function AdminDesilDashboardContent({
         </h2>
 
         {/* Table / List Container */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200/90 dark:border-slate-700 shadow-sm divide-y divide-gray-200/80 dark:divide-slate-700 overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200/90 dark:border-slate-700 shadow-2xs divide-y divide-gray-200/80 dark:divide-slate-700 overflow-hidden">
           {submissions.length === 0 ? (
             <div className="p-8 text-center text-xs text-gray-500 dark:text-gray-400">
               Belum ada pengajuan peninjauan desil di database.
@@ -385,7 +453,7 @@ export function AdminDesilDashboardContent({
               <div className="flex items-center gap-3 min-w-0">
                 {/* Circular Initial Avatar */}
                 <div
-                  className={`w-10 h-10 rounded-full ${item.bgInitial} ${item.textInitial} flex items-center justify-center font-bold text-sm flex-shrink-0 shadow-sm select-none`}
+                  className={`w-10 h-10 rounded-full ${item.bgInitial} ${item.textInitial} flex items-center justify-center font-bold text-sm flex-shrink-0 shadow-2xs select-none`}
                 >
                   {item.initial}
                 </div>
@@ -405,7 +473,7 @@ export function AdminDesilDashboardContent({
               </div>
 
               {/* Middle & Right Column: Status Badge, Date, and Action */}
-              <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-6 pl-0">
+              <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-6 pl-13 sm:pl-0">
                 {/* Status Badge */}
                 <span
                   className={`inline-block text-[11px] font-semibold px-3 py-1 rounded-full border whitespace-nowrap ${getDesilBadgeClass(
@@ -436,7 +504,7 @@ export function AdminDesilDashboardContent({
 
       {/* ── Modal Detail Verifikasi Pengajuan Warga ── */}
       {selectedSubmission && (
-        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-xl shadow-2xl border border-gray-200 dark:border-slate-700 p-6 max-h-[92vh] overflow-y-auto animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 pb-3 mb-4">
               <div>
@@ -532,7 +600,7 @@ export function AdminDesilDashboardContent({
                     Desil {selectedSubmission.desilDiajukan || "-"}
                   </span>
                 </div>
-                <div className="sm:col-span-2">
+                <div className="col-span-2">
                   <span className="text-gray-500 block">Status Saat Ini</span>
                   <span className="font-semibold text-blue-600 dark:text-blue-400">
                     {selectedSubmission.statusBadge}

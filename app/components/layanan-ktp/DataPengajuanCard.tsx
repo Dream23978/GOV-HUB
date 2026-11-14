@@ -24,8 +24,6 @@ interface DataPengajuanCardProps {
   formData?: DataPengajuanValues;
   onChange?: (data: DataPengajuanValues) => void;
   onFileSelect?: (file: File | null) => void;
-  isUploadingDoc?: boolean;
-  uploadError?: string | null;
 }
 
 export function DataPengajuanCard({
@@ -33,15 +31,12 @@ export function DataPengajuanCard({
   formData: externalFormData,
   onChange,
   onFileSelect,
-  isUploadingDoc = false,
-  uploadError: externalUploadError = null,
 }: DataPengajuanCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
-  const [localUploadError, setLocalUploadError] = useState<string | null>(null);
 
   const [internalData, setInternalData] = useState<DataPengajuanValues>(() => ({
-    nama: initialData?.nama || "",
+    nama: initialData?.nama || "Warga",
     nik: initialData?.nik || "",
     tempatTglLahir: initialData?.tempatTglLahir || "",
     jenisKelamin: initialData?.jenisKelamin || "Laki-Laki",
@@ -70,7 +65,6 @@ export function DataPengajuanCard({
 
   const handleRemoveFile = () => {
     setSelectedFileName(null);
-    setLocalUploadError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -81,30 +75,11 @@ export function DataPengajuanCard({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-    if (!file) {
-      setSelectedFileName(null);
-      setLocalUploadError(null);
-      if (onFileSelect) onFileSelect(null);
-      return;
-    }
-    if (!/^(application\/pdf|image\/(jpeg|jpg|png|webp))$/i.test(file.type)) {
-      setLocalUploadError("Format dokumen harus PDF, JPG, PNG, atau WEBP.");
-      e.target.value = "";
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setLocalUploadError("Ukuran dokumen maksimal 5MB.");
-      e.target.value = "";
-      return;
-    }
-    setLocalUploadError(null);
-    setSelectedFileName(file.name);
+    setSelectedFileName(file ? file.name : null);
     if (onFileSelect) {
       onFileSelect(file);
     }
   };
-
-  const activeUploadError = externalUploadError || localUploadError;
 
   return (
     <div className="mb-3.5">
@@ -139,10 +114,8 @@ export function DataPengajuanCard({
               <input
                 type="text"
                 value={data.nik}
-                readOnly
-                aria-readonly="true"
-                title="NIK tidak dapat diubah secara mandiri"
-                className="w-full flex-1 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800/80 px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 cursor-not-allowed focus:outline-none"
+                onChange={(e) => handleFieldChange("nik", e.target.value)}
+                className="w-full flex-1 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs text-gray-800 dark:text-gray-200 shadow-sm focus:outline-none focus:ring-1 focus:ring-[#0E4FA8] focus:border-[#0E4FA8]"
               />
             </div>
 
@@ -228,10 +201,10 @@ export function DataPengajuanCard({
                 />
               </div>
 
-              {/* Kewarganegaraan */}
+              {/* Kewarga negara */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                 <label className="sm:w-28 md:w-32 text-xs font-bold text-gray-900 dark:text-white flex-shrink-0">
-                  Kewarganegaraan
+                  Kewarga negara
                 </label>
                 <input
                   type="text"
@@ -432,16 +405,6 @@ export function DataPengajuanCard({
                 </PopoverContent>
               </Popover>
 
-              {isUploadingDoc && (
-                <p className="mt-1 text-[11px] font-medium text-blue-600 dark:text-blue-400">
-                  Mengunggah dokumen...
-                </p>
-              )}
-              {activeUploadError && (
-                <p className="mt-1 text-[11px] font-medium text-rose-600 dark:text-rose-400">
-                  {activeUploadError}
-                </p>
-              )}
               {selectedFileName && (
                 <div className="flex items-center gap-1 mt-1 text-[11px] text-emerald-600 dark:text-emerald-400">
                   <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">

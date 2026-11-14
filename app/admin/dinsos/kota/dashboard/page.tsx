@@ -1,10 +1,7 @@
 import React from "react";
 import { AdminDashboardLayout } from "@/app/components/admin/AdminDashboardLayout";
 import { AdminDesilDashboardContent } from "@/app/components/admin/AdminDesilDashboardContent";
-import {
-  getAdminDesilSubmissions,
-  requireAdminPageSession,
-} from "@/lib/services/admin.service";
+import { getAdminDesilSubmissions } from "@/lib/services/admin.service";
 
 export const metadata = {
   title: "Dashboard Desil - Dinsos Kota | GOV-HUB",
@@ -12,7 +9,6 @@ export const metadata = {
 };
 
 export default async function DinsosKotaDashboardPage() {
-  const session = await requireAdminPageSession("dinsos", "kota");
   const result = await getAdminDesilSubmissions();
 
   return (
@@ -20,13 +16,12 @@ export default async function DinsosKotaDashboardPage() {
       instansi="dinsos"
       instansiName="Dinas Sosial"
       roleTitle="Admin Kota"
-      adminName={session.nama}
-      wilayahLabel={session.wilayahLabel}
+      adminName="Petugas Dinsos Surabaya"
       basePath="/admin/dinsos/kota/dashboard"
     >
       <AdminDesilDashboardContent
         roleTitle="Admin Kota (Dinsos)"
-        wilayah={session.wilayahLabel}
+        wilayah="Kota Surabaya"
         initialSubmissions={result.data}
         initialCounts={result.counts}
         canApprove={false}
@@ -34,3 +29,4 @@ export default async function DinsosKotaDashboardPage() {
     </AdminDashboardLayout>
   );
 }
+

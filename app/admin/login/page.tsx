@@ -33,7 +33,7 @@ export default function AdminLoginPage() {
           <div className="relative z-10">
             <Link
               href="/admin"
-              className="inline-flex items-center gap-1.5 text-xs text-blue-200 hover:text-white transition-colors bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full border border-white/20 backdrop-blur-sm"
+              className="inline-flex items-center gap-1.5 text-xs text-blue-200 hover:text-white transition-colors bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full border border-white/20 backdrop-blur-xs"
             >
               <ArrowLeft size={13} />
               <span>Halaman Depan Admin</span>

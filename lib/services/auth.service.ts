@@ -1,11 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { hashPassword, verifyPassword } from "@/lib/password";
 import { upsertProfile, getProfileById, findProfileByIdentifier } from "./profile.service";
 import { sendOtpEmail } from "./email.service";
 import { Profile } from "@/types/database";
-import { cookies, headers } from "next/headers";
-import { createHash, randomBytes, randomInt } from "node:crypto";
+import { cookies } from "next/headers";
+import crypto from "crypto";
+
+/**
+ * Fungsi pembantu untuk menghasilkan hash kata sandi terenkripsi
+ */
+export function hashPassword(password: string): string {
+  return crypto.createHash("sha256").update(password).digest("hex");
+}
 
 export interface SignInParams {
   nik: string;
@@ -29,80 +35,78 @@ export function nikToAuthEmail(nik: string): string {
   return `${nik}@govhub.id`;
 }
 
-function isStrongPassword(password: string): boolean {
-  return (
-    Boolean(password) &&
-    password.length >= 8 &&
-    /[A-Z]/.test(password) &&
-    /[a-z]/.test(password) &&
-    /[0-9]/.test(password) &&
-    /[^A-Za-z0-9]/.test(password)
-  );
-}
-
-function normalizeResetIdentifier(contact: string): string {
-  const trimmed = contact.trim();
-  return trimmed.includes("@") ? trimmed.toLowerCase() : trimmed;
-}
-
-function sha256Hex(value: string): string {
-  return createHash("sha256").update(value).digest("hex");
-}
-
-async function isHttpsRequest(): Promise<boolean> {
-  const hdrs = await headers();
-  return (
-    hdrs.get("x-forwarded-proto") === "https" ||
-    process.env.NEXT_PUBLIC_SITE_URL?.startsWith("https://") === true
-  );
-}
-
 /**
- * Service login warga menggunakan identitas NIK 16 digit dan Password
+ * Service login menggunakan identitas NIK dan Password
  */
-export async function signInWithNik({
-  nik,
-  password,
-}: SignInParams): Promise<AuthResponse<{ user: unknown; profile: Profile | null }>> {
-  const cleanNik = nik.trim();
-  if (!/^\d{16}$/.test(cleanNik) || !password) {
-    return {
-      success: false,
-      error: "NIK (16 digit) atau kata sandi yang Anda masukkan tidak sesuai.",
-    };
-  }
-
+export async function signInWithNik({ nik, password }: SignInParams): Promise<AuthResponse<{ user: unknown; profile: Profile | null }>> {
   const supabase = await createClient();
   const adminClient = createAdminClient();
+  const cleanNik = nik.trim();
 
-  let targetEmail: string | null = null;
-  if (adminClient) {
-    const { data: profileRecord } = await adminClient
+  // 1. Cari email asli warga: coba via profiles, lalu fallback via metadata admin
+  let targetEmail = "";
+  try {
+    const { data: profileRecord } = await supabase
       .from("profiles")
       .select("email")
       .eq("nik", cleanNik)
       .maybeSingle();
+
     if (profileRecord?.email) {
       targetEmail = profileRecord.email;
     }
+  } catch {
+    // Abaikan jika query gagal
   }
 
-  let data: { user: { id: string; email?: string | null; user_metadata?: Record<string, unknown> } | null } | null = null;
-  let error: { message?: string } | null = null;
-
-  if (targetEmail) {
-    const res = await supabase.auth.signInWithPassword({ email: targetEmail, password });
-    data = res.data;
-    error = res.error;
+  // Fallback cari email dari admin API jika tabel profiles terkendala izin schema
+  if (!targetEmail && adminClient) {
+    try {
+      const { data: usersData } = await adminClient.auth.admin.listUsers();
+      const match = usersData?.users?.find(
+        (u) =>
+          u.user_metadata?.nik === cleanNik ||
+          u.email?.startsWith(cleanNik)
+      );
+      if (match?.email) {
+        targetEmail = match.email;
+      }
+    } catch (err) {
+      console.warn("Notice admin fallback:", err);
+    }
   }
 
+  // 2. Coba login dengan email asli yang terdaftar
+  const signInResult = targetEmail
+    ? await supabase.auth.signInWithPassword({
+        email: targetEmail,
+        password,
+      })
+    : { data: null, error: { message: "Email not found" } };
+
+  let data = signInResult.data;
+  let error = signInResult.error;
+
+  // 3. Fallback: Coba format {nik}@govhub.id jika belum berhasil
   if (error || !data?.user) {
-    const fallbackRes = await supabase.auth.signInWithPassword({
+    const fallbackGovHub = await supabase.auth.signInWithPassword({
       email: nikToAuthEmail(cleanNik),
       password,
     });
-    if (!fallbackRes.error && fallbackRes.data.user) {
-      data = fallbackRes.data;
+    if (!fallbackGovHub.error && fallbackGovHub.data.user) {
+      data = fallbackGovHub.data;
+      error = null;
+    }
+  }
+
+  // 4. Fallback: Coba format {nik}@local
+  if (error || !data?.user) {
+    const fallbackLocal = await supabase.auth.signInWithPassword({
+      email: `${cleanNik}@local`,
+      password,
+    });
+    if (!fallbackLocal.error && fallbackLocal.data.user) {
+      data = fallbackLocal.data;
       error = null;
     }
   }
@@ -114,40 +118,55 @@ export async function signInWithNik({
     };
   }
 
+  // 5. Ambil atau inisialisasi profil di tabel public.profiles
   let profile = await getProfileById(data.user.id);
-  const resolvedEmail =
+  const fallbackEmail =
     profile?.email ||
     data.user.email ||
-    (typeof data.user.user_metadata?.email_kontak === "string"
-      ? data.user.user_metadata.email_kontak
-      : null) ||
+    data.user.user_metadata?.email_kontak ||
     targetEmail;
+  const currentPasswordHash = hashPassword(password);
 
   if (!profile) {
     const fallbackName =
-      (typeof data.user.user_metadata?.nama_lengkap === "string"
-        ? data.user.user_metadata.nama_lengkap
-        : null) || `Warga ${cleanNik.slice(-4)}`;
+      data.user.user_metadata?.nama_lengkap ||
+      data.user.user_metadata?.full_name ||
+      `Warga ${cleanNik.slice(-4)}`;
 
     const createRes = await upsertProfile({
       id: data.user.id,
       nik: cleanNik,
       nama_lengkap: fallbackName,
-      email: resolvedEmail || undefined,
-      nomor_telepon:
-        typeof data.user.user_metadata?.nomor_telepon === "string"
-          ? data.user.user_metadata.nomor_telepon
-          : null,
+      email: fallbackEmail,
+      password_hash: currentPasswordHash,
+      nomor_telepon: data.user.user_metadata?.nomor_telepon || null,
+      role: "warga",
+      desil_saat_ini: 5,
       kota: "Surabaya",
       provinsi: "Jawa Timur",
     });
     profile = createRes.data || null;
+  } else if (!profile.password_hash || !profile.email) {
+    // Sinkronkan otomatis jika sebelumnya masih NULL
+    await upsertProfile({
+      id: profile.id,
+      nik: profile.nik,
+      nama_lengkap: profile.nama_lengkap,
+      email: profile.email || fallbackEmail,
+      password_hash: profile.password_hash || currentPasswordHash,
+      nomor_telepon: profile.nomor_telepon,
+      role: profile.role,
+      desil_saat_ini: profile.desil_saat_ini,
+      kota: profile.kota,
+      provinsi: profile.provinsi,
+    });
+    profile = await getProfileById(data.user.id);
   }
 
   return {
     success: true,
     data: {
-      user: { id: data.user.id, email: data.user.email },
+      user: data.user,
       profile,
     },
   };
@@ -155,6 +174,7 @@ export async function signInWithNik({
 
 /**
  * Service registrasi warga baru ke Supabase Auth & Tabel public.profiles
+ * Menggunakan EMAIL ASLI yang diinputkan user di tabel auth.users
  */
 export async function signUpWithNik({
   nik,
@@ -163,48 +183,51 @@ export async function signUpWithNik({
   namaLengkap,
 }: SignUpParams): Promise<AuthResponse<{ user: unknown; profile: Profile | null }>> {
   const cleanNik = nik.trim();
-  const cleanContact = emailPhone.trim();
   if (!/^\d{16}$/.test(cleanNik)) {
     return { success: false, error: "NIK harus terdiri dari 16 digit angka." };
   }
-  if (!isStrongPassword(password)) {
-    return {
-      success: false,
-      error:
-        "Kata sandi minimal 8 karakter dan wajib mengandung huruf besar, huruf kecil, angka, serta karakter khusus.",
-    };
+  if (!password || password.length < 8) {
+    return { success: false, error: "Kata sandi minimal harus 8 karakter." };
   }
-
-  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanContact);
-  const phoneNumber = !isEmail ? cleanContact : null;
-  const contactEmail = isEmail ? cleanContact.toLowerCase() : null;
+  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailPhone.trim());
+  const phoneNumber = !isEmail ? emailPhone.trim() : null;
+  const contactEmail = isEmail ? emailPhone.trim() : null;
   const resolvedNama = (namaLengkap?.trim() || `Warga ${cleanNik.slice(-4)}`).slice(0, 120);
-  const authEmail = contactEmail || nikToAuthEmail(cleanNik);
+
+  // JIKA USER INPUT EMAIL ASLI: DAFTARKAN DENGAN EMAIL ASLI TERSEBUT
+  // Hanya gunakan format internal jika user murni memasukkan nomor telepon
+  const authEmail = isEmail ? emailPhone.trim() : nikToAuthEmail(cleanNik);
+  const passwordHash = hashPassword(password);
+
   const adminClient = createAdminClient();
 
+  // Pastikan NIK belum digunakan oleh akun lain sebelum membuat akun baru
   if (adminClient) {
     const { data: existingNik } = await adminClient
       .from("profiles")
       .select("id")
       .eq("nik", cleanNik)
       .maybeSingle();
-
     if (existingNik) {
       return {
         success: false,
         error: "NIK atau Email ini sudah terdaftar. Silakan gunakan menu Masuk.",
       };
     }
+  }
 
+  // 1. Jika ada SUPABASE_SERVICE_ROLE_KEY di .env.local, gunakan admin API
+  if (adminClient) {
     const { data: adminUser, error: adminError } = await adminClient.auth.admin.createUser({
       email: authEmail,
-      password,
+      password: password,
       email_confirm: true,
       user_metadata: {
         nik: cleanNik,
         nama_lengkap: resolvedNama,
         email_kontak: contactEmail,
         nomor_telepon: phoneNumber,
+        role: "warga",
       },
     });
 
@@ -214,52 +237,91 @@ export async function signUpWithNik({
         nik: cleanNik,
         nama_lengkap: resolvedNama,
         email: authEmail,
+        password_hash: passwordHash,
         nomor_telepon: phoneNumber,
+        role: "warga",
+        desil_saat_ini: 5,
         kota: "Surabaya",
         provinsi: "Jawa Timur",
       });
 
       const supabase = await createClient();
-      await supabase.auth.signInWithPassword({ email: authEmail, password });
+      await supabase.auth.signInWithPassword({
+        email: authEmail,
+        password: password,
+      });
+
       const profile = await getProfileById(adminUser.user.id);
       return {
         success: true,
-        data: { user: { id: adminUser.user.id, email: adminUser.user.email }, profile },
-      };
-    }
-
-    if (adminError?.message?.toLowerCase().includes("already")) {
-      return {
-        success: false,
-        error: "NIK atau Email ini sudah terdaftar. Silakan gunakan menu Masuk.",
+        data: { user: adminUser.user, profile },
       };
     }
   }
 
+  // 2. Registrasi via client biasa
   const supabase = await createClient();
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email: authEmail,
-    password,
+    password: password,
     options: {
       data: {
         nik: cleanNik,
         nama_lengkap: resolvedNama,
         email_kontak: contactEmail,
         nomor_telepon: phoneNumber,
+        role: "warga",
       },
     },
   });
 
   if (authError) {
-    if (authError.message.toLowerCase().includes("already registered") || authError.status === 422) {
+    const errMsg = authError.message.toLowerCase();
+
+    // Bypass rate limit email Supabase
+    if (errMsg.includes("rate limit") || errMsg.includes("over_email_send_rate_limit") || authError.status === 429) {
+      const signInCheck = await supabase.auth.signInWithPassword({
+        email: authEmail,
+        password: password,
+      });
+
+      if (!signInCheck.error && signInCheck.data.user) {
+        await upsertProfile({
+          id: signInCheck.data.user.id,
+          nik: cleanNik,
+          nama_lengkap: resolvedNama,
+          email: authEmail,
+          password_hash: passwordHash,
+          nomor_telepon: phoneNumber,
+          role: "warga",
+          desil_saat_ini: 5,
+          kota: "Surabaya",
+          provinsi: "Jawa Timur",
+        });
+
+        const profile = await getProfileById(signInCheck.data.user.id);
+        return {
+          success: true,
+          data: { user: signInCheck.data.user, profile },
+        };
+      }
+
+      return {
+        success: false,
+        error: "Sistem pendaftaran sedang sibuk. Silakan gunakan menu Masuk jika akun sudah terbuat.",
+      };
+    }
+
+    if (authError.message.includes("already registered") || authError.status === 422) {
       return {
         success: false,
         error: "NIK atau Email ini sudah terdaftar. Silakan gunakan menu Masuk.",
       };
     }
+
     return {
       success: false,
-      error: "Gagal melakukan registrasi akun. Silakan periksa kembali data Anda.",
+      error: authError.message || "Gagal melakukan registrasi akun.",
     };
   }
 
@@ -272,18 +334,25 @@ export async function signUpWithNik({
       nik: cleanNik,
       nama_lengkap: resolvedNama,
       email: authEmail,
+      password_hash: passwordHash,
       nomor_telepon: phoneNumber,
+      role: "warga",
+      desil_saat_ini: 5,
       kota: "Surabaya",
       provinsi: "Jawa Timur",
     });
     profile = profileRes.data || null;
 
-    await supabase.auth.signInWithPassword({ email: authEmail, password });
+    // Login otomatis setelah registrasi berhasil agar session langsung aktif
+    await supabase.auth.signInWithPassword({
+      email: authEmail,
+      password: password,
+    });
   }
 
   return {
     success: true,
-    data: { user: user ? { id: user.id, email: user.email } : null, profile },
+    data: { user, profile },
   };
 }
 
@@ -311,85 +380,85 @@ export async function signOut() {
   return { success: true };
 }
 
-const RESET_COOKIE = "gov_pw_reset";
-const MAX_OTP_ATTEMPTS = 5;
-
 /**
- * Service meminta kode reset password (OTP) ke email terdaftar
+ * Service meminta kode reset password (OTP)
+ * Mendeteksi akun & NIK pemilik berdasarkan input Email, No HP, atau NIK.
  */
-export async function requestPasswordReset(
-  contact: string
-): Promise<AuthResponse<{ email: string; nik?: string }>> {
-  const identifier = normalizeResetIdentifier(contact);
-  if (!identifier) {
-    return { success: false, error: "Masukkan Email, No. Handphone, atau NIK yang terdaftar." };
-  }
+export async function requestPasswordReset(contact: string): Promise<AuthResponse<{ email: string; nik?: string }>> {
+  const trimmed = contact.trim();
 
-  const adminClient = createAdminClient();
-  if (!adminClient) {
-    return { success: false, error: "Layanan reset kata sandi belum dikonfigurasi." };
-  }
+  // 1. Deteksi akun warga dari tabel profiles & auth
+  const { profile, matchedNik, matchedEmail } = await findProfileByIdentifier(trimmed);
 
-  const { profile, matchedNik, matchedEmail } = await findProfileByIdentifier(identifier);
-  if (!profile?.id || !matchedEmail || matchedEmail.endsWith("@govhub.id")) {
+  // Jika akun tidak ditemukan sama sekali dan format bukan NIK terdaftar
+  const resolvedNik = matchedNik || (/^\d{16}$/.test(trimmed) ? trimmed : null);
+  const resolvedEmail = matchedEmail || (trimmed.includes("@") ? trimmed : null);
+
+  if (!resolvedNik && !resolvedEmail) {
     return {
       success: false,
-      error:
-        "Akun dengan email aktif tidak ditemukan. Pastikan Anda memiliki alamat email terdaftar pada akun GOV-HUB.",
+      error: "Akun dengan Email/No. Handphone/NIK tersebut tidak terdaftar di sistem GOV-HUB.",
     };
   }
 
-  // Normalize canonical identifier so cooldown & lookup are case-insensitive across all inputs
-  const storageIdentifier = matchedEmail.trim().toLowerCase();
+  const targetSendEmail = resolvedEmail || (trimmed.includes("@") ? trimmed : null);
 
+  // Tabel password_resets hanya boleh diakses server (service role), bukan anon
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return { success: false, error: "Konfigurasi server belum lengkap (SUPABASE_SERVICE_ROLE_KEY)." };
+  }
+
+  // Cooldown 60 detik per identifier agar OTP tidak bisa di-spam / di-brute-force via request ulang
   const { data: lastReq } = await adminClient
     .from("password_resets")
     .select("created_at")
-    .eq("identifier", storageIdentifier)
+    .eq("identifier", trimmed)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-
   if (lastReq && Date.now() - new Date(lastReq.created_at).getTime() < 60_000) {
     return { success: false, error: "Tunggu 1 menit sebelum meminta kode OTP baru." };
   }
 
-  const otpCode = randomInt(10000, 100000).toString();
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  // OTP 5 digit dari CSPRNG
+  const otpCode = crypto.randomInt(10000, 100000).toString();
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // Berlaku 15 menit
 
-  await adminClient.from("password_resets").delete().eq("identifier", storageIdentifier);
-
-  const { error: insertErr } = await adminClient.from("password_resets").insert({
-    identifier: storageIdentifier,
-    token: hashPassword(otpCode),
-    expires_at: expiresAt,
-  });
-
+  // Satu OTP aktif per identifier; disimpan dalam bentuk hash
+  await adminClient.from("password_resets").delete().eq("identifier", trimmed);
+  const { error: insertErr } = await adminClient
+    .from("password_resets")
+    .insert({ identifier: trimmed, token: hashPassword(otpCode), expires_at: expiresAt });
   if (insertErr) {
+    console.error("Gagal menyimpan OTP:", insertErr.message);
     return { success: false, error: "Gagal membuat kode OTP. Coba lagi nanti." };
   }
 
-  const emailRes = await sendOtpEmail({
-    to: matchedEmail,
-    otpCode,
-  });
+  console.log(`[OTP] Kode reset dibuat untuk ${profile?.nama_lengkap || "warga"} (berlaku 15 menit)`);
 
-  if (!emailRes.success) {
-    await adminClient.from("password_resets").delete().eq("identifier", storageIdentifier);
-    return { success: false, error: emailRes.error || "Gagal mengirim email kode OTP." };
+  // Kirim email sungguhan via Resend jika alamat email tujuan valid
+  if (targetSendEmail) {
+    await sendOtpEmail({
+      to: targetSendEmail,
+      otpCode: otpCode,
+    });
   }
 
   return {
     success: true,
     data: {
-      email: storageIdentifier,
-      nik: matchedNik || undefined,
+      email: trimmed,
+      nik: resolvedNik || undefined,
     },
   };
 }
 
+const RESET_COOKIE = "gov_pw_reset";
+const MAX_OTP_ATTEMPTS = 5;
+
 /**
- * Service memverifikasi token OTP 5 digit pemulihan kata sandi (atomic attempts tracking)
+ * Service memverifikasi token OTP 5 digit pemulihan kata sandi
  */
 export async function verifyPasswordResetOtp({
   email,
@@ -399,27 +468,16 @@ export async function verifyPasswordResetOtp({
   token: string;
 }): Promise<AuthResponse<{ verified: boolean }>> {
   const cleanToken = token.trim();
-  const identifier = normalizeResetIdentifier(email);
-  const invalid = {
-    success: false,
-    error: "Kode OTP salah atau telah kedaluwarsa. Silakan periksa kembali.",
-  };
+  const identifier = email.trim();
+  const invalid = { success: false, error: "Kode OTP salah atau telah kedaluwarsa. Silakan periksa kembali." };
 
   const adminClient = createAdminClient();
-  if (!adminClient || !identifier || !/^\d{5}$/.test(cleanToken)) {
-    return invalid;
-  }
-
-  // Lookup canonical email if caller typed NIK/phone or different casing
-  const { matchedEmail } = await findProfileByIdentifier(identifier);
-  const lookupIds = Array.from(
-    new Set([identifier, matchedEmail?.trim().toLowerCase()].filter(Boolean) as string[])
-  );
+  if (!adminClient || !/^\d{5}$/.test(cleanToken)) return invalid;
 
   const { data: row } = await adminClient
     .from("password_resets")
     .select("id, token, attempts")
-    .in("identifier", lookupIds)
+    .eq("identifier", identifier)
     .is("used_at", null)
     .gte("expires_at", new Date().toISOString())
     .order("created_at", { ascending: false })
@@ -427,36 +485,27 @@ export async function verifyPasswordResetOtp({
     .maybeSingle();
 
   if (!row) return invalid;
-
-  // Atomically consume an attempt slot before checking OTP so concurrent brute-force is serialized
-  const { data: attemptRows } = await adminClient.rpc("increment_otp_attempt", {
-    p_reset_id: row.id,
-    p_max_attempts: MAX_OTP_ATTEMPTS,
-  });
-
-  if (!attemptRows || attemptRows.length === 0) {
+  if (row.attempts >= MAX_OTP_ATTEMPTS) {
     return { success: false, error: "Terlalu banyak percobaan. Silakan minta kode OTP baru." };
   }
 
-  const { valid } = verifyPassword(cleanToken, row.token);
-  if (!valid) {
+  const a = Buffer.from(row.token);
+  const b = Buffer.from(hashPassword(cleanToken));
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    await adminClient.from("password_resets").update({ attempts: row.attempts + 1 }).eq("id", row.id);
     return invalid;
   }
 
-  const resetToken = randomBytes(32).toString("hex");
-  const { error: updateErr } = await adminClient
+  // OTP benar -> terbitkan token reset sekali pakai, hanya disimpan di cookie httpOnly
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  await adminClient
     .from("password_resets")
-    .update({ reset_token: sha256Hex(resetToken), attempts: MAX_OTP_ATTEMPTS })
+    .update({ reset_token: hashPassword(resetToken), attempts: MAX_OTP_ATTEMPTS })
     .eq("id", row.id);
 
-  if (updateErr) {
-    return { success: false, error: "Gagal memproses sesi reset kata sandi." };
-  }
-
-  const secure = await isHttpsRequest();
   (await cookies()).set(RESET_COOKIE, resetToken, {
     httpOnly: true,
-    secure,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
     path: "/",
     maxAge: 15 * 60,
@@ -466,99 +515,156 @@ export async function verifyPasswordResetOtp({
 }
 
 /**
- * Service memperbarui kata sandi baru untuk user login atau pemegang cookie reset terverifikasi
+ * Service memperbarui kata sandi baru.
+ * Hanya bisa dipakai oleh: user yang sedang login (akun sendiri), atau
+ * pemegang cookie reset yang diterbitkan setelah OTP valid.
+ * Parameter email diabaikan (tidak dipercaya), dipertahankan agar pemanggil lama tetap kompatibel.
  */
 export async function updateUserPassword(
   newPassword: string,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _emailFromClient?: string
 ): Promise<AuthResponse<{ updated: boolean }>> {
-  if (!isStrongPassword(newPassword)) {
+  if (
+    !newPassword ||
+    newPassword.length < 8 ||
+    !/[A-Z]/.test(newPassword) ||
+    !/[a-z]/.test(newPassword) ||
+    !/[0-9]/.test(newPassword)
+  ) {
     return {
       success: false,
-      error:
-        "Kata sandi baru minimal 8 karakter dengan huruf besar, huruf kecil, angka, dan karakter khusus.",
+      error: "Kata sandi baru minimal 8 karakter dengan kombinasi huruf besar, huruf kecil, dan angka.",
     };
   }
-
   const supabase = await createClient();
+  const newHash = hashPassword(newPassword);
   const cookieStore = await cookies();
   const resetToken = cookieStore.get(RESET_COOKIE)?.value;
 
+  // 1. User yang sedang login mengganti password akunnya sendiri
   if (!resetToken) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return {
-        success: false,
-        error: "Sesi reset password tidak valid atau kedaluwarsa. Silakan ulangi dari awal.",
-      };
-    }
-
     const { error: sessionError } = await supabase.auth.updateUser({ password: newPassword });
     if (!sessionError) return { success: true, data: { updated: true } };
-    return {
-      success: false,
-      error: "Gagal memperbarui kata sandi akun.",
-    };
+    return { success: false, error: "Sesi reset password tidak valid atau kedaluwarsa. Silakan ulangi dari awal." };
   }
 
+  // 2. Alur lupa password: validasi token reset sekali pakai
   const adminClient = createAdminClient();
   if (!adminClient) {
-    return { success: false, error: "Layanan reset kata sandi belum dikonfigurasi." };
+    return { success: false, error: "Konfigurasi server belum lengkap (SUPABASE_SERVICE_ROLE_KEY)." };
   }
 
   const { data: resetRow } = await adminClient
     .from("password_resets")
     .select("id, identifier")
-    .eq("reset_token", sha256Hex(resetToken))
+    .eq("reset_token", hashPassword(resetToken))
     .is("used_at", null)
     .gte("expires_at", new Date().toISOString())
     .maybeSingle();
 
   if (!resetRow) {
     cookieStore.delete(RESET_COOKIE);
-    return {
-      success: false,
-      error: "Sesi reset password tidak valid atau kedaluwarsa. Silakan ulangi dari awal.",
-    };
+    return { success: false, error: "Sesi reset password tidak valid atau kedaluwarsa. Silakan ulangi dari awal." };
   }
 
-  const { profile } = await findProfileByIdentifier(resetRow.identifier);
-  if (!profile?.id) {
-    return {
-      success: false,
-      error: "Akun pengguna tidak ditemukan untuk memperbarui kata sandi.",
-    };
+  {
+    const cleanIdentifier = resetRow.identifier.trim();
+    let targetUserId: string | null = null;
+
+    // A. Cari ID user di tabel profiles menggunakan hak akses Admin
+    try {
+      // Cek berdasarkan NIK
+      const { data: pByNik } = await adminClient
+        .from("profiles")
+        .select("id, nik, email")
+        .eq("nik", cleanIdentifier)
+        .maybeSingle();
+
+      if (pByNik?.id) {
+        targetUserId = pByNik.id;
+      }
+
+      // Cek berdasarkan Email jika belum ketemu
+      if (!targetUserId && cleanIdentifier.includes("@")) {
+        const { data: pByEmail } = await adminClient
+          .from("profiles")
+          .select("id, nik, email")
+          .eq("email", cleanIdentifier)
+          .maybeSingle();
+
+        if (pByEmail?.id) {
+          targetUserId = pByEmail.id;
+        }
+      }
+    } catch (err) {
+      console.warn("Notice query profiles:", err);
+    }
+
+    // B. Cari di auth.users melalui Admin API
+    if (!targetUserId) {
+      const { data: usersData, error: listUsersErr } = await adminClient.auth.admin.listUsers();
+      if (listUsersErr) {
+        console.error("[LIST USERS ERROR - Cek format SUPABASE_SERVICE_ROLE_KEY Anda]:", listUsersErr.message);
+      }
+      if (usersData?.users) {
+        console.log(`[ADMIN SEARCH] Ditemukan ${usersData.users.length} user di auth.users. Mencocokkan: ${cleanIdentifier}`);
+        const targetUser = usersData.users.find(
+          (u) =>
+            u.email?.toLowerCase() === cleanIdentifier.toLowerCase() ||
+            u.user_metadata?.nik === cleanIdentifier ||
+            u.user_metadata?.email_kontak === cleanIdentifier ||
+            (cleanIdentifier.length === 16 && u.email?.startsWith(cleanIdentifier))
+        );
+        if (targetUser) {
+          targetUserId = targetUser.id;
+          console.log(`[MATCH FOUND] Akun cocok! User ID: ${targetUserId}`);
+        }
+      }
+    }
+
+    // C. Eksekusi pembaruan kata sandi di auth.users dan profiles
+    if (targetUserId) {
+      const { error: adminUpdateErr } = await adminClient.auth.admin.updateUserById(
+        targetUserId,
+        { password: newPassword }
+      );
+
+      if (adminUpdateErr) {
+        console.error("[UPDATE PASSWORD ERROR via Admin]:", adminUpdateErr.message);
+        return {
+          success: false,
+          error: adminUpdateErr.message || "Gagal memperbarui kata sandi di database.",
+        };
+      }
+
+      // Sinkronkan juga password_hash di tabel public.profiles
+      try {
+        await adminClient
+          .from("profiles")
+          .update({
+            password_hash: newHash,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", targetUserId);
+      } catch (syncErr) {
+        console.warn("Notice: Gagal update password_hash di profiles:", syncErr);
+      }
+
+      // Tandai token reset telah terpakai dan hapus cookie
+      await adminClient
+        .from("password_resets")
+        .update({ used_at: new Date().toISOString() })
+        .eq("id", resetRow.id);
+      cookieStore.delete(RESET_COOKIE);
+
+      console.log(`[UPDATE PASSWORD SUCCESS] Password berhasil diperbarui untuk User ID: ${targetUserId}`);
+      return { success: true, data: { updated: true } };
+    }
   }
 
-  const { error: adminUpdateErr } = await adminClient.auth.admin.updateUserById(profile.id, {
-    password: newPassword,
-  });
-
-  if (adminUpdateErr) {
-    return {
-      success: false,
-      error: "Gagal memperbarui kata sandi pada server autentikasi.",
-    };
-  }
-
-  if (profile.role === "admin" || profile.role === "petugas") {
-    await adminClient
-      .from("profiles")
-      .update({
-        password_hash: hashPassword(newPassword),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", profile.id);
-  }
-
-  await adminClient
-    .from("password_resets")
-    .update({ used_at: new Date().toISOString() })
-    .eq("id", resetRow.id);
-  cookieStore.delete(RESET_COOKIE);
-
-  return { success: true, data: { updated: true } };
+  return {
+    success: false,
+    error: "Akun pengguna tidak ditemukan untuk memperbarui kata sandi.",
+  };
 }

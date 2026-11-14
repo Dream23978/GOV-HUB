@@ -6,16 +6,15 @@ export interface TimelineStep {
   timestamp?: string;
   statusTag?: string;
   description: string;
-  state: "completed" | "current" | "pending" | "error";
+  state: "completed" | "current" | "pending";
 }
 
 interface TrackingTimelineCardProps {
   steps?: TimelineStep[];
   statusRaw?: string;
-  catatanPetugas?: string | null;
 }
 
-function buildStepsFromStatus(statusRaw?: string, catatanPetugas?: string | null): TimelineStep[] {
+function buildStepsFromStatus(statusRaw?: string): TimelineStep[] {
   const s = statusRaw || "menunggu_verifikasi";
   const isRejected = s === "ditolak";
   const isVerifCurrent = s === "menunggu_verifikasi" || s === "pengajuan_ulang";
@@ -35,13 +34,11 @@ function buildStepsFromStatus(statusRaw?: string, catatanPetugas?: string | null
       title: "Verifikasi Data",
       statusTag: isRejected ? "Ditolak" : isVerifCurrent ? "Proses saat ini" : undefined,
       description: isRejected
-        ? catatanPetugas?.trim()
-          ? `Pengajuan ditolak: ${catatanPetugas.trim()}`
-          : "Pengajuan ditolak saat proses verifikasi petugas."
+        ? "Pengajuan ditolak saat proses verifikasi petugas."
         : isVerifCurrent
         ? "Data kependudukan sedang diverifikasi oleh petugas."
         : "Data kependudukan berhasil diverifikasi.",
-      state: isRejected ? "error" : isVerifCurrent ? "current" : "completed",
+      state: isRejected || isVerifCurrent ? "current" : "completed",
     },
     {
       id: "3",
@@ -73,9 +70,8 @@ function buildStepsFromStatus(statusRaw?: string, catatanPetugas?: string | null
 export function TrackingTimelineCard({
   steps,
   statusRaw,
-  catatanPetugas,
 }: TrackingTimelineCardProps) {
-  const resolvedSteps = steps ?? buildStepsFromStatus(statusRaw, catatanPetugas);
+  const resolvedSteps = steps ?? buildStepsFromStatus(statusRaw);
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-300/80 dark:border-slate-700 shadow-sm p-5 md:p-6 mb-4 w-full">
       {/* Title */}
@@ -92,8 +88,6 @@ export function TrackingTimelineCard({
           let dotColorClass = "bg-gray-400 dark:bg-slate-600";
           if (step.state === "completed") {
             dotColorClass = "bg-[#107C41]";
-          } else if (step.state === "error") {
-            dotColorClass = "bg-red-600";
           } else if (step.state === "current") {
             dotColorClass = "bg-[#2563EB]";
           }
@@ -110,7 +104,7 @@ export function TrackingTimelineCard({
               <div className="flex flex-col items-center flex-shrink-0">
                 {/* Dot */}
                 <div
-                  className={`w-3.5 h-3.5 rounded-full ${dotColorClass} flex-shrink-0 z-10 mt-1 shadow-sm`}
+                  className={`w-3.5 h-3.5 rounded-full ${dotColorClass} flex-shrink-0 z-10 mt-1 shadow-xs`}
                 />
                 {/* Connecting Line */}
                 {!isLast && (

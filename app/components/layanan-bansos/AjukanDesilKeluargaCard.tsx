@@ -11,9 +11,9 @@ interface AjukanDesilKeluargaCardProps {
 }
 
 export function AjukanDesilKeluargaCard({
-  anggotaKeluarga = "0 orang",
-  orangDewasa = "0 orang",
-  anakSekolah = "0 orang",
+  anggotaKeluarga = "4 orang",
+  orangDewasa = "2 orang",
+  anakSekolah = "2 orang",
   onSave,
 }: AjukanDesilKeluargaCardProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -22,14 +22,6 @@ export function AjukanDesilKeluargaCard({
     orangDewasa,
     anakSekolah,
   });
-
-  const updateField = (field: keyof typeof data, value: string) => {
-    const next = { ...data, [field]: value };
-    setData(next);
-    if (onSave) {
-      onSave(next);
-    }
-  };
 
   const handleSave = () => {
     setIsEditing(false);
@@ -79,7 +71,7 @@ export function AjukanDesilKeluargaCard({
             <input
               type="text"
               value={data.anggotaKeluarga}
-              onChange={(e) => updateField("anggotaKeluarga", e.target.value)}
+              onChange={(e) => setData({ ...data, anggotaKeluarga: e.target.value })}
               className="text-right text-xs font-semibold text-gray-900 dark:text-white rounded-md border border-gray-300 dark:border-slate-600 px-2 py-0.5 bg-gray-50 dark:bg-slate-900 focus:outline-none focus:border-blue-500 max-w-[130px]"
             />
           ) : (
@@ -98,7 +90,7 @@ export function AjukanDesilKeluargaCard({
             <input
               type="text"
               value={data.orangDewasa}
-              onChange={(e) => updateField("orangDewasa", e.target.value)}
+              onChange={(e) => setData({ ...data, orangDewasa: e.target.value })}
               className="text-right text-xs font-semibold text-gray-900 dark:text-white rounded-md border border-gray-300 dark:border-slate-600 px-2 py-0.5 bg-gray-50 dark:bg-slate-900 focus:outline-none focus:border-blue-500 max-w-[130px]"
             />
           ) : (
@@ -117,7 +109,7 @@ export function AjukanDesilKeluargaCard({
             <input
               type="text"
               value={data.anakSekolah}
-              onChange={(e) => updateField("anakSekolah", e.target.value)}
+              onChange={(e) => setData({ ...data, anakSekolah: e.target.value })}
               className="text-right text-xs font-semibold text-gray-900 dark:text-white rounded-md border border-gray-300 dark:border-slate-600 px-2 py-0.5 bg-gray-50 dark:bg-slate-900 focus:outline-none focus:border-blue-500 max-w-[130px]"
             />
           ) : (

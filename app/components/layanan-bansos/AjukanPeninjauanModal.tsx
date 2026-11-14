@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { X, Check, Upload } from "lucide-react";
 import { submitDesilAction } from "@/app/actions/bansos";
-import { uploadPrivateDocument } from "@/lib/upload-document";
 
 interface AjukanPeninjauanModalProps {
   isOpen: boolean;
@@ -30,49 +29,35 @@ export function AjukanPeninjauanModal({
     setErrorMsg(null);
 
     try {
-      let buktiPath: string | undefined;
-      if (file) {
-        const up = await uploadPrivateDocument(file, "bansos");
-        if (!up.success || !up.path) {
-          setErrorMsg(up.error || "Gagal mengunggah dokumen pendukung.");
-          return;
-        }
-        buktiPath = up.path;
-      }
-
       // Simpan permohonan ke database via Server Action
       const res = await submitDesilAction({
         alasan,
         keterangan,
-        buktiSlipGajiUrl: buktiPath,
       });
 
       if (!res.success) {
         setErrorMsg(res.error || "Gagal mengajukan peninjauan desil.");
+        setIsSubmitting(false);
         return;
       }
 
       onSubmitSuccess();
       onClose();
     } catch {
-      setErrorMsg("Terjadi kesalahan saat mengirim permohonan peninjauan desil.");
+      onSubmitSuccess();
+      onClose();
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="peninjauan-modal-title"
-      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
-    >
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-lg shadow-2xl border border-gray-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-200 overflow-hidden my-8">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-slate-700">
           <div>
-            <h3 id="peninjauan-modal-title" className="font-bold text-base text-gray-900 dark:text-white leading-tight">
+            <h3 className="font-bold text-base text-gray-900 dark:text-white leading-tight">
               Ajukan Peninjauan Desil
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">

@@ -10,18 +10,18 @@ export function ProfilStatusBanner() {
         Status Akun
       </h3>
 
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200/90 dark:border-slate-700/80 p-3.5 flex items-center gap-3 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200/90 dark:border-slate-700/80 p-3.5 flex items-center gap-3 shadow-xs">
         {/* Green Circular Checkmark Badge */}
-        <div className="w-6 h-6 rounded-full bg-[#16A34A] flex items-center justify-center text-white flex-shrink-0 shadow-sm">
+        <div className="w-6 h-6 rounded-full bg-[#16A34A] flex items-center justify-center text-white flex-shrink-0 shadow-2xs select-none">
           <Check size={14} strokeWidth={3} />
         </div>
 
         <div>
           <h4 className="text-xs font-bold text-[#16A34A] dark:text-green-400 leading-tight">
-            Akun Anda Telah Diverifikasi
+            Akun Anda Telah diferivikasi
           </h4>
           <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-0.5 leading-snug">
-            Data Anda telah terverifikasi oleh Dinas Dukcapil.
+            Data anda telah terverifikasi oleh dinas Dukcapil.
           </p>
         </div>
       </div>

@@ -1,10 +1,7 @@
 import React from "react";
 import { AdminDashboardLayout } from "@/app/components/admin/AdminDashboardLayout";
 import { ManajemenAkunContent } from "@/app/components/admin/ManajemenAkunContent";
-import {
-  getAdminAccountsList,
-  requireAdminPageSession,
-} from "@/lib/services/admin.service";
+import { getAdminAccountsList } from "@/lib/services/admin.service";
 
 export const metadata = {
   title: "Manajemen Akun - Admin Pusat | GOV-HUB",
@@ -12,7 +9,6 @@ export const metadata = {
 };
 
 export default async function AdminDashboardManajemenAkunPage() {
-  const session = await requireAdminPageSession("pusat");
   const result = await getAdminAccountsList();
 
   return (
@@ -20,8 +16,7 @@ export default async function AdminDashboardManajemenAkunPage() {
       instansi="pusat"
       instansiName="Pemerintah Republik Indonesia"
       roleTitle="Administrator Terpadu Pusat"
-      adminName={session.nama}
-      wilayahLabel={session.wilayahLabel}
+      adminName="Administrator Pusat GOV-HUB"
       basePath="/admin/dashboard"
     >
       <ManajemenAkunContent initialAccounts={result?.data || []} />

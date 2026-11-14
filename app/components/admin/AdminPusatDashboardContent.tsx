@@ -51,7 +51,6 @@ export interface KtpRow {
   nik: string;
   layanan: string;
   statusBadge: string;
-  statusRaw?: string;
   tanggal: string;
   initial: string;
   bgInitial: string;
@@ -79,9 +78,68 @@ interface AdminPusatDashboardContentProps {
   initialKtpSubmissions?: KtpRow[];
 }
 
-import { DESIL_TIERS } from "@/lib/desil";
-
-const DESIL_CRITERIA = DESIL_TIERS;
+const DESIL_CRITERIA = [
+  {
+    level: 1,
+    badgeColor: "bg-red-600 text-white",
+    persen: "10% terbawah",
+    kategori: "Sangat Miskin / Miskin Ekstrem",
+  },
+  {
+    level: 2,
+    badgeColor: "bg-orange-500 text-white",
+    persen: "11–20% terbawah",
+    kategori: "Kategori Miskin",
+  },
+  {
+    level: 3,
+    badgeColor: "bg-amber-500 text-white",
+    persen: "21–30% terbawah",
+    kategori: "Hampir Miskin",
+  },
+  {
+    level: 4,
+    badgeColor: "bg-yellow-500 text-slate-900",
+    persen: "31–40% terbawah",
+    kategori: "Rentan Miskin",
+  },
+  {
+    level: 5,
+    badgeColor: "bg-lime-600 text-white",
+    persen: "41–50% terbawah",
+    kategori: "Menengah Transisi (Penyangga)",
+  },
+  {
+    level: 6,
+    badgeColor: "bg-emerald-600 text-white",
+    persen: "51–60%",
+    kategori: "Kategori Menengah",
+  },
+  {
+    level: 7,
+    badgeColor: "bg-teal-600 text-white",
+    persen: "61–70%",
+    kategori: "Kategori Menengah",
+  },
+  {
+    level: 8,
+    badgeColor: "bg-cyan-600 text-white",
+    persen: "71–80%",
+    kategori: "Menengah Atas",
+  },
+  {
+    level: 9,
+    badgeColor: "bg-blue-600 text-white",
+    persen: "81–90%",
+    kategori: "Mampu / Sejahtera",
+  },
+  {
+    level: 10,
+    badgeColor: "bg-[#1b3a6b] text-white",
+    persen: "10% teratas",
+    kategori: "Kesejahteraan Paling Tinggi",
+  },
+];
 
 export function AdminPusatDashboardContent({
   initialDesilSubmissions,
@@ -305,39 +363,6 @@ export function AdminPusatDashboardContent({
       }, 1100);
     } catch {
       setKtpFeedback("Gagal menolak pengajuan KTP.");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleUpdateKtpStatus = async (
-    id: string,
-    nextStatus: "diproses" | "menunggu_cetak" | "selesai",
-    nextBadge: string
-  ) => {
-    setIsProcessing(true);
-    setKtpFeedback(null);
-    try {
-      const res = await updateKtpSubmissionStatusAction({ id, status: nextStatus });
-      if (!res.success) {
-        setKtpFeedback(res.error || "Gagal memperbarui status pengajuan KTP.");
-        return;
-      }
-      setKtpList((prev) =>
-        prev.map((item) =>
-          item.id === id
-            ? { ...item, statusBadge: nextBadge, statusRaw: nextStatus }
-            : item
-        )
-      );
-      setSelectedKtp((prev) =>
-        prev && prev.id === id
-          ? { ...prev, statusBadge: nextBadge, statusRaw: nextStatus }
-          : prev
-      );
-      setKtpFeedback(`Status pengajuan KTP diperbarui menjadi "${nextBadge}".`);
-    } catch {
-      setKtpFeedback("Gagal memperbarui status pengajuan KTP.");
     } finally {
       setIsProcessing(false);
     }
@@ -567,7 +592,7 @@ export function AdminPusatDashboardContent({
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className={`text-[11px] font-black px-2 py-0.5 rounded-md shadow-sm ${d.badgeColor}`}>
+                    <span className={`text-[11px] font-black px-2 py-0.5 rounded-md shadow-xs ${d.badgeColor}`}>
                       DESIL {d.level}
                     </span>
                     <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
@@ -577,9 +602,6 @@ export function AdminPusatDashboardContent({
                   <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-snug">
                     {d.kategori}
                   </h3>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">
-                    {d.deskripsi}
-                  </p>
                 </div>
                 <div className="mt-3 pt-2 border-t border-slate-200/60 dark:border-white/5 flex items-center justify-between text-[10px] text-slate-400">
                   <span>Prioritas Bansos</span>
@@ -627,14 +649,14 @@ export function AdminPusatDashboardContent({
                 value={searchDesil}
                 onChange={(e) => setSearchDesil(e.target.value)}
                 placeholder="Cari NIK / Nama pemohon desil..."
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-900/40 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0084FF]"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-900/40 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-[#0084FF]"
               />
             </div>
             <div className="flex gap-2">
               <select
                 value={filterStatusDesil}
                 onChange={(e) => setFilterStatusDesil(e.target.value)}
-                className="px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 text-xs text-slate-700 dark:text-slate-200 font-medium focus:outline-none"
+                className="px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 text-xs text-slate-700 dark:text-slate-200 font-medium focus:outline-hidden"
               >
                 <option value="all">Semua Status</option>
                 <option value="menunggu">Perlu Verifikasi</option>
@@ -697,7 +719,7 @@ export function AdminPusatDashboardContent({
                     <button
                       type="button"
                       onClick={() => openDesilModal(item)}
-                      className="px-4 py-1.5 rounded-xl border border-slate-300 dark:border-white/20 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-[#0084FF] hover:text-white hover:border-[#0084FF] transition-all cursor-pointer shadow-sm"
+                      className="px-4 py-1.5 rounded-xl border border-slate-300 dark:border-white/20 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-[#0084FF] hover:text-white hover:border-[#0084FF] transition-all cursor-pointer shadow-xs"
                     >
                       Lihat
                     </button>
@@ -785,7 +807,7 @@ export function AdminPusatDashboardContent({
                       setShowKtpRejectInput(false);
                       setKtpRejectReason("");
                     }}
-                    className="px-4 py-1.5 rounded-xl border border-slate-300 dark:border-white/20 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-sky-600 hover:text-white hover:border-sky-600 transition-all cursor-pointer shadow-sm"
+                    className="px-4 py-1.5 rounded-xl border border-slate-300 dark:border-white/20 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-sky-600 hover:text-white hover:border-sky-600 transition-all cursor-pointer shadow-xs"
                   >
                     Lihat
                   </button>
@@ -803,7 +825,7 @@ export function AdminPusatDashboardContent({
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
         >
           <div className="bg-white dark:bg-[#122240] rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl border border-slate-100 dark:border-white/10 space-y-5 max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between pb-3 border-b border-slate-100 dark:border-white/10">
@@ -1010,7 +1032,7 @@ export function AdminPusatDashboardContent({
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 animate-in fade-in"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 animate-in fade-in"
         >
           <div className="bg-white dark:bg-[#101F3C] rounded-2xl w-full max-w-xl shadow-2xl border border-gray-200 dark:border-white/10 p-5 sm:p-6 animate-in zoom-in-95 max-h-[92vh] overflow-y-auto">
             {/* Header Modal */}
@@ -1129,9 +1151,9 @@ export function AdminPusatDashboardContent({
               <button
                 type="button"
                 onClick={() => setShowBlangkoDropdownKtp((prev) => !prev)}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-white/20 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-white shadow-sm hover:bg-slate-50 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-white/20 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-white shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
               >
-                <span>Ketersediaan Blangko</span>
+                <span>Ketersedian Blangko</span>
                 <span
                   className={`w-2.5 h-2.5 rounded-full ${
                     blangkoStatusKtp === "tersedia" ? "bg-emerald-500" : "bg-amber-500"
@@ -1166,7 +1188,7 @@ export function AdminPusatDashboardContent({
                         Tersedia
                       </div>
                       <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                        Blangko KTP tersedia, siap digunakan ({blangkoStockKtp.toLocaleString("id-ID")})
+                        Blangko KTP Tersedia siap di gunakan ({blangkoStockKtp.toLocaleString("id-ID")})
                       </div>
                     </div>
                   </label>
@@ -1244,7 +1266,7 @@ export function AdminPusatDashboardContent({
                     type="button"
                     disabled={!ktpRejectReason.trim()}
                     onClick={() => handleRejectKtp(selectedKtp.id)}
-                    className="px-4 py-1.5 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 cursor-pointer shadow-sm transition-colors"
+                    className="px-4 py-1.5 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 cursor-pointer shadow-xs transition-colors"
                   >
                     Konfirmasi Tolak Pengajuan
                   </button>
@@ -1253,73 +1275,15 @@ export function AdminPusatDashboardContent({
             )}
 
             {/* 6. ACTION BUTTONS */}
-            <div className="pt-3 border-t border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-end gap-2">
-              {selectedKtp.statusRaw !== "ditolak" &&
-                selectedKtp.statusBadge !== "Ditolak" &&
-                selectedKtp.statusRaw !== "selesai" &&
-                selectedKtp.statusBadge !== "KTP Selesai" &&
-                !showKtpRejectInput && (
-                  <>
-                    <button
-                      type="button"
-                      disabled={isProcessing}
-                      onClick={() => setShowKtpRejectInput(true)}
-                      className="px-3.5 py-2 rounded-lg text-xs font-bold border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 disabled:opacity-50 cursor-pointer transition-colors"
-                    >
-                      Tolak
-                    </button>
-                    {(selectedKtp.statusRaw === "menunggu_verifikasi" ||
-                      selectedKtp.statusBadge === "Proses" ||
-                      selectedKtp.statusBadge === "Menunggu Verifikasi") && (
-                      <button
-                        type="button"
-                        disabled={isProcessing}
-                        onClick={() =>
-                          handleUpdateKtpStatus(selectedKtp.id, "diproses", "Perekaman Biometrik")
-                        }
-                        className="px-4 py-2 rounded-lg text-xs font-bold bg-[#0084FF] hover:bg-blue-600 text-white disabled:opacity-50 cursor-pointer shadow-sm transition-colors"
-                      >
-                        Mulai Biometrik
-                      </button>
-                    )}
-                    {(selectedKtp.statusRaw === "diproses" ||
-                      selectedKtp.statusBadge === "Perekaman Biometrik" ||
-                      selectedKtp.statusBadge === "Diproses") && (
-                      <button
-                        type="button"
-                        disabled={isProcessing}
-                        onClick={() =>
-                          handleUpdateKtpStatus(selectedKtp.id, "menunggu_cetak", "Menunggu Cetak")
-                        }
-                        className="px-4 py-2 rounded-lg text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white disabled:opacity-50 cursor-pointer shadow-sm transition-colors"
-                      >
-                        Perekaman Selesai
-                      </button>
-                    )}
-                    {(selectedKtp.statusRaw === "menunggu_cetak" ||
-                      selectedKtp.statusBadge === "Menunggu Cetak") && (
-                      <button
-                        type="button"
-                        disabled={isProcessing}
-                        onClick={() =>
-                          handleUpdateKtpStatus(selectedKtp.id, "selesai", "KTP Selesai")
-                        }
-                        className="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50 cursor-pointer shadow-sm transition-colors"
-                      >
-                        KTP Selesai
-                      </button>
-                    )}
-                  </>
-                )}
+            <div className="pt-3 border-t border-slate-200 dark:border-white/10 flex items-center justify-end gap-2.5">
               <button
                 type="button"
-                disabled={isProcessing}
                 onClick={() => {
                   setSelectedKtp(null);
                   setShowKtpRejectInput(false);
                   setKtpRejectReason("");
                 }}
-                className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 Tutup
               </button>

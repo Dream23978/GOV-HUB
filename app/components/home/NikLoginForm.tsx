@@ -19,7 +19,7 @@ export function NikLoginForm() {
         whileTap={{ scale: 0.97 }}
       >
         {/* Left: icon + text content */}
-        <div className="flex items-center gap-3 flex-1 min-w-0 px-3.5 sm:px-4 py-3">
+        <div className="flex items-center gap-3 flex-1 px-4 py-3">
           {/* Person icon */}
           <motion.div
             className="flex-shrink-0 text-blue-500"
@@ -41,11 +41,11 @@ export function NikLoginForm() {
           </motion.div>
 
           {/* Text block */}
-          <div className="flex flex-col min-w-0">
-            <span className="text-blue-600 font-semibold text-sm md:text-base leading-tight">
+          <div className="flex flex-col">
+            <span className="text-blue-600 font-semibold text-sm md:text-base">
               Login dengan NIK
             </span>
-            <span className="text-[11px] text-gray-500 leading-snug mt-0.5">
+            <span className="text-[11px] text-gray-400 leading-none mt-0.5 whitespace-nowrap">
               Login menggunakan NIK mengakses Layanan
             </span>
           </div>
@@ -53,7 +53,7 @@ export function NikLoginForm() {
 
         {/* Right: Masuk button */}
         <motion.div
-          className="bg-blue-600 text-white font-semibold text-sm md:text-base px-4 sm:px-6 py-3 flex-shrink-0 flex items-center"
+          className="bg-blue-600 text-white font-semibold text-sm md:text-base px-6 py-3 flex-shrink-0 flex items-center"
           whileHover={{ backgroundColor: "#1d4ed8" }}
           transition={{ duration: 0.2 }}
         >

@@ -39,15 +39,10 @@ export function AdminSidebar({
   showRoleSubtitle = false,
 }: AdminSidebarProps) {
   const pathname = usePathname();
-  const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark";
 
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const isDark = mounted && resolvedTheme === "dark";
-
+  // Menu navigasi: Pusat menggabungkan KTP dan Desil sesuai spesifikasi mockup
   const navItems =
     instansi === "pusat"
       ? [
@@ -56,7 +51,7 @@ export function AdminSidebar({
           { href: `${basePath}/pengajuan-desil`, label: "Pengajuan Desil", icon: IdCard },
           { href: `${basePath}/warga`, label: "Data Warga", icon: Handshake },
           { href: `${basePath}/manajemen-akun`, label: "Manajemen Akun", icon: UserCog },
-          { href: `${basePath}/pengaturan`, label: "Pengaturan", icon: Settings },
+          { href: `${basePath}/pengaturan`, label: "Pengaturan", icon: FileText },
         ]
       : instansi === "dinsos"
       ? [
@@ -76,6 +71,7 @@ export function AdminSidebar({
 
   return (
     <>
+      {/* Mobile Overlay Backdrop */}
       {isMobileOpen && (
         <div
           role="button"
@@ -83,27 +79,28 @@ export function AdminSidebar({
           aria-label="Tutup Menu"
           onClick={onCloseMobile}
           onKeyDown={(e) => {
-            if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
-              onCloseMobile?.();
-            }
+            if (e.key === "Escape") onCloseMobile?.();
           }}
-          className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm md:hidden cursor-pointer"
+          className="fixed inset-0 bg-black/60 z-40 backdrop-blur-xs md:hidden cursor-pointer"
         />
       )}
 
       <aside
-        className={`fixed md:sticky top-0 left-0 h-screen overflow-y-auto z-50 md:z-20 w-[240px] md:w-[225px] bg-gradient-to-b from-[#0F2245] via-[#0B1A35] to-[#071326] text-white flex flex-col justify-between p-4 shadow-2xl flex-shrink-0 transition-transform duration-300 ease-in-out border-r border-white/5 ${
+        className={`fixed md:sticky top-0 left-0 h-screen z-50 md:z-20 w-[240px] md:w-[225px] bg-gradient-to-b from-[#0F2245] via-[#0B1A35] to-[#071326] text-white flex flex-col justify-between p-4 shadow-2xl select-none flex-shrink-0 transition-transform duration-300 ease-in-out border-r border-white/5 ${
           isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
         <div>
+          {/* Top Brand Logo - 100% Sesuai Screenshot */}
           <div className="flex items-center justify-between px-2 py-3 mb-5">
             <div className="flex items-center gap-3">
+              {/* Emblem icon */}
               <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#0066CC] via-[#0088FF] to-[#38BDF8] p-[2.5px] shadow-lg shadow-blue-500/30 flex items-center justify-center flex-shrink-0">
                 <div className="w-full h-full rounded-full bg-[#081832] flex items-center justify-center">
                   <Building2 size={20} className="text-[#38BDF8]" strokeWidth={2.4} />
                 </div>
               </div>
+              {/* Brand Text */}
               <div className="flex flex-col">
                 <div className="flex items-center text-xl font-black tracking-tight leading-none">
                   <span className="text-white">GOV-</span>
@@ -117,6 +114,7 @@ export function AdminSidebar({
               </div>
             </div>
 
+            {/* Mobile Close Button */}
             <button
               type="button"
               onClick={onCloseMobile}
@@ -127,11 +125,12 @@ export function AdminSidebar({
             </button>
           </div>
 
+          {/* Navigation Menu */}
           <nav className="flex flex-col gap-2">
             {navItems.map(({ href, label, icon: Icon }, idx) => {
               const isHome = idx === 0;
               const isActive = isHome
-                ? pathname === href || pathname === `${href}/`
+                ? pathname === href || pathname === `${href}/` || pathname.endsWith("/dashboard")
                 : pathname === href || pathname.startsWith(`${href}/`);
 
               return (
@@ -158,7 +157,8 @@ export function AdminSidebar({
           </nav>
         </div>
 
-        <div className="mt-4 rounded-2xl bg-white/10 border border-white/15 p-2 backdrop-blur-md flex flex-col gap-1.5 shadow-lg">
+        {/* Bottom Menu: Dark Mode & Keluar (Card Translucent) */}
+        <div className="rounded-2xl bg-white/10 border border-white/15 p-2 backdrop-blur-md flex flex-col gap-1.5 shadow-lg">
           <button
             type="button"
             onClick={() => setTheme(isDark ? "light" : "dark")}
@@ -176,9 +176,12 @@ export function AdminSidebar({
             type="button"
             onClick={async () => {
               try {
+                localStorage.removeItem("govhub_admin_session");
+                sessionStorage.clear();
+                document.cookie = "govhub_admin_session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
                 await fetch("/api/admin/logout", { method: "POST" });
-              } catch {
-                // Tetap arahkan ke halaman login
+              } catch (e) {
+                console.warn("Logout error:", e);
               }
               window.location.href = "/admin/login";
             }}

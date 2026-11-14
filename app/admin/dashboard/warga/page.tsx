@@ -1,10 +1,7 @@
 import React from "react";
 import { AdminDashboardLayout } from "@/app/components/admin/AdminDashboardLayout";
 import { DataWargaDesilContent } from "@/app/components/admin/dinsos/DataWargaDesilContent";
-import {
-  getAdminDataWarga,
-  requireAdminPageSession,
-} from "@/lib/services/admin.service";
+import { getAdminDataWarga } from "@/lib/services/admin.service";
 
 export const metadata = {
   title: "Data Warga - Admin Pusat | GOV-HUB",
@@ -12,7 +9,6 @@ export const metadata = {
 };
 
 export default async function AdminDashboardDataWargaPage() {
-  const session = await requireAdminPageSession("pusat");
   const result = await getAdminDataWarga();
 
   return (
@@ -20,8 +16,7 @@ export default async function AdminDashboardDataWargaPage() {
       instansi="pusat"
       instansiName="Pemerintah Republik Indonesia"
       roleTitle="Administrator Terpadu Pusat"
-      adminName={session.nama}
-      wilayahLabel={session.wilayahLabel}
+      adminName="Administrator Pusat GOV-HUB"
       basePath="/admin/dashboard"
     >
       <DataWargaDesilContent initialWargaData={result?.data || []} />

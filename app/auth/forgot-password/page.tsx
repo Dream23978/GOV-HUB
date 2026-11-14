@@ -26,9 +26,9 @@ export default function ForgotPasswordPage() {
         setLoading(false);
         return;
       }
-      router.push(`/auth/forgot-password/verify?email=${encodeURIComponent(res.data?.email || contact.trim())}`);
+      router.push(`/auth/forgot-password/verify?email=${encodeURIComponent(contact)}`);
     } catch {
-      setErrorMessage("Terjadi kesalahan saat mengirim permintaan OTP. Silakan coba lagi.");
+      router.push(`/auth/forgot-password/verify?email=${encodeURIComponent(contact)}`);
     } finally {
       setLoading(false);
     }
@@ -75,11 +75,10 @@ export default function ForgotPasswordPage() {
             <ScrollAnimate direction="left" duration={0.5} delay={0.15}>
               <input
                 id="contact-input"
-                type="email"
+                type="text"
                 value={contact}
                 onChange={(e) => setContact(e.target.value)}
-                placeholder="Masukkan email terdaftar Anda"
-                aria-label="Masukkan email terdaftar Anda"
+                placeholder="Masukan Email/No Handphone anda"
                 className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-blue-400 transition"
               />
             </ScrollAnimate>

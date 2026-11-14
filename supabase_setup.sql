@@ -14,7 +14,7 @@ BEGIN
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ktp_submission_status') THEN
-    CREATE TYPE public.ktp_submission_status AS ENUM ('menunggu_verifikasi', 'diproses', 'menunggu_cetak', 'selesai', 'ditolak', 'pengajuan_ulang');
+    CREATE TYPE public.ktp_submission_status AS ENUM ('menunggu_verifikasi', 'diproses', 'selesai', 'ditolak');
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'desil_submission_status') THEN
@@ -38,15 +38,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   rw character varying,
   kelurahan character varying,
   kecamatan character varying,
-  kota character varying DEFAULT 'Pontianak'::character varying,
-  provinsi character varying DEFAULT 'Kalimantan Barat'::character varying,
+  kota character varying DEFAULT 'Surabaya'::character varying,
+  provinsi character varying DEFAULT 'Jawa Timur'::character varying,
   nomor_telepon character varying,
-  agama character varying,
-  pekerjaan character varying,
-  jumlah_tanggungan integer DEFAULT 0,
-  penghasilan_bulanan numeric DEFAULT 0,
-  instansi character varying,
-  tingkat character varying,
   role public.user_role NOT NULL DEFAULT 'warga'::public.user_role,
   desil_saat_ini integer DEFAULT 5,
   created_at timestamp with time zone DEFAULT now(),
@@ -86,7 +80,6 @@ CREATE TABLE IF NOT EXISTS public.ktp_submissions (
   status public.ktp_submission_status NOT NULL DEFAULT 'menunggu_verifikasi'::public.ktp_submission_status,
   catatan_petugas text,
   petugas_id uuid,
-  completed_at timestamp with time zone,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT ktp_submissions_pkey PRIMARY KEY (id),
@@ -156,14 +149,12 @@ CREATE TABLE IF NOT EXISTS public.password_resets (
 -- 5. ROW LEVEL SECURITY (RLS) & POLICIES
 -- ========================================================
 
--- Helper SECURITY DEFINER di skema privat (tidak diekspos via PostgREST)
-CREATE SCHEMA IF NOT EXISTS private;
-
-CREATE OR REPLACE FUNCTION private.is_staff()
+-- Helper SECURITY DEFINER untuk mengecek role tanpa memicu infinite recursion di RLS profiles
+CREATE OR REPLACE FUNCTION public.is_staff()
 RETURNS boolean
 LANGUAGE sql
 SECURITY DEFINER
-SET search_path = ''
+SET search_path = public
 STABLE
 AS $$
   SELECT EXISTS (
@@ -171,9 +162,6 @@ AS $$
     WHERE id = auth.uid() AND role IN ('admin', 'petugas')
   );
 $$;
-
-REVOKE ALL ON FUNCTION private.is_staff() FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION private.is_staff() TO authenticated, service_role;
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.password_resets ENABLE ROW LEVEL SECURITY;
@@ -184,285 +172,197 @@ ALTER TABLE public.biometric_schedules ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 CREATE POLICY "Users can view own profile"
-ON public.profiles FOR SELECT TO authenticated
-USING ((SELECT auth.uid()) = id);
+ON public.profiles FOR SELECT
+USING (auth.uid() = id);
 
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile"
-ON public.profiles FOR UPDATE TO authenticated
-USING ((SELECT auth.uid()) = id)
-WITH CHECK ((SELECT auth.uid()) = id);
+ON public.profiles FOR UPDATE
+USING (auth.uid() = id)
+WITH CHECK (auth.uid() = id);
 
 DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 CREATE POLICY "Users can insert own profile"
-ON public.profiles FOR INSERT TO authenticated
-WITH CHECK ((SELECT auth.uid()) = id);
+ON public.profiles FOR INSERT
+WITH CHECK (auth.uid() = id);
 
 DROP POLICY IF EXISTS "Admins and officers can view all profiles" ON public.profiles;
 CREATE POLICY "Admins and officers can view all profiles"
-ON public.profiles FOR SELECT TO authenticated
-USING ((SELECT private.is_staff()));
+ON public.profiles FOR SELECT
+USING (public.is_staff());
 
--- Cegah warga biasa menaikkan role/instansi/tingkat, mengubah desil, atau mengganti NIK
+-- Cegah warga biasa menaikkan role, mengubah desil, atau mengganti NIK miliknya sendiri
 CREATE OR REPLACE FUNCTION public.guard_profile_sensitive_columns()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = ''
+SET search_path = public
 AS $$
 BEGIN
-  IF (SELECT auth.uid()) IS NOT NULL AND NOT (SELECT private.is_staff()) THEN
-    IF TG_OP = 'INSERT' THEN
-      NEW.role := 'warga'::public.user_role;
-      NEW.desil_saat_ini := 5;
-      NEW.instansi := NULL;
-      NEW.tingkat := NULL;
-    ELSE
-      NEW.role := OLD.role;
-      NEW.desil_saat_ini := OLD.desil_saat_ini;
-      NEW.nik := OLD.nik;
-      NEW.instansi := OLD.instansi;
-      NEW.tingkat := OLD.tingkat;
-    END IF;
+  IF auth.uid() IS NOT NULL AND NOT public.is_staff() THEN
+    NEW.role := OLD.role;
+    NEW.desil_saat_ini := OLD.desil_saat_ini;
+    NEW.nik := OLD.nik;
   END IF;
   RETURN NEW;
 END;
 $$;
-
-REVOKE ALL ON FUNCTION public.guard_profile_sensitive_columns() FROM PUBLIC, anon, authenticated;
 
 DROP TRIGGER IF EXISTS trg_guard_profile_columns ON public.profiles;
 CREATE TRIGGER trg_guard_profile_columns
-  BEFORE INSERT OR UPDATE ON public.profiles
+  BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.guard_profile_sensitive_columns();
 
-CREATE OR REPLACE FUNCTION public.set_ktp_completed_at()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
-BEGIN
-  IF NEW.status = 'selesai'::public.ktp_submission_status AND NEW.completed_at IS NULL THEN
-    NEW.completed_at := now();
-  ELSIF NEW.status <> 'selesai'::public.ktp_submission_status THEN
-    NEW.completed_at := NULL;
-  END IF;
-  RETURN NEW;
-END;
-$$;
+-- password_resets: hanya boleh diakses oleh service_role di backend (tanpa policy anon/authenticated)
+DROP POLICY IF EXISTS "Allow anon insert and select password resets" ON public.password_resets;
 
-REVOKE ALL ON FUNCTION public.set_ktp_completed_at() FROM PUBLIC, anon, authenticated;
-
-DROP TRIGGER IF EXISTS trg_set_ktp_completed_at ON public.ktp_submissions;
-CREATE TRIGGER trg_set_ktp_completed_at
-  BEFORE INSERT OR UPDATE ON public.ktp_submissions
-  FOR EACH ROW EXECUTE FUNCTION public.set_ktp_completed_at();
-
-CREATE OR REPLACE FUNCTION public.guard_notification_update()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
-BEGIN
-  IF (SELECT auth.uid()) IS NOT NULL AND NOT (SELECT private.is_staff()) THEN
-    NEW.user_id := OLD.user_id;
-    NEW.judul := OLD.judul;
-    NEW.pesan := OLD.pesan;
-    NEW.tipe := OLD.tipe;
-    NEW.tautan_aksi := OLD.tautan_aksi;
-    NEW.created_at := OLD.created_at;
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-REVOKE ALL ON FUNCTION public.guard_notification_update() FROM PUBLIC, anon, authenticated;
-
-DROP TRIGGER IF EXISTS trg_guard_notification_update ON public.notifications;
-CREATE TRIGGER trg_guard_notification_update
-  BEFORE UPDATE ON public.notifications
-  FOR EACH ROW EXECUTE FUNCTION public.guard_notification_update();
-
--- Kebijakan RLS ktp_submissions
+-- Kebijakan RLS untuk ktp_submissions
 DROP POLICY IF EXISTS "Users can view own ktp submissions" ON public.ktp_submissions;
 CREATE POLICY "Users can view own ktp submissions"
-ON public.ktp_submissions FOR SELECT TO authenticated
-USING ((SELECT auth.uid()) = user_id);
+ON public.ktp_submissions FOR SELECT
+USING (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Users can insert own ktp submissions" ON public.ktp_submissions;
 CREATE POLICY "Users can insert own ktp submissions"
-ON public.ktp_submissions FOR INSERT TO authenticated
-WITH CHECK ((SELECT auth.uid()) = user_id AND status = 'menunggu_verifikasi'::public.ktp_submission_status);
+ON public.ktp_submissions FOR INSERT
+WITH CHECK (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Admins and officers can manage all ktp submissions" ON public.ktp_submissions;
 CREATE POLICY "Admins and officers can manage all ktp submissions"
-ON public.ktp_submissions FOR ALL TO authenticated
-USING ((SELECT private.is_staff()));
+ON public.ktp_submissions FOR ALL
+USING (public.is_staff());
 
--- Kebijakan RLS desil_submissions
+-- Kebijakan RLS untuk desil_submissions
 DROP POLICY IF EXISTS "Users can view own desil submissions" ON public.desil_submissions;
 CREATE POLICY "Users can view own desil submissions"
-ON public.desil_submissions FOR SELECT TO authenticated
-USING ((SELECT auth.uid()) = user_id);
+ON public.desil_submissions FOR SELECT
+USING (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Users can insert own desil submissions" ON public.desil_submissions;
 CREATE POLICY "Users can insert own desil submissions"
-ON public.desil_submissions FOR INSERT TO authenticated
-WITH CHECK ((SELECT auth.uid()) = user_id AND status = 'menunggu_verifikasi'::public.desil_submission_status);
+ON public.desil_submissions FOR INSERT
+WITH CHECK (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Admins and officers can manage all desil submissions" ON public.desil_submissions;
 CREATE POLICY "Admins and officers can manage all desil submissions"
-ON public.desil_submissions FOR ALL TO authenticated
-USING ((SELECT private.is_staff()));
+ON public.desil_submissions FOR ALL
+USING (public.is_staff());
 
--- Kebijakan RLS notifications
+-- Kebijakan RLS untuk notifications
 DROP POLICY IF EXISTS "Users can view own notifications" ON public.notifications;
 CREATE POLICY "Users can view own notifications"
-ON public.notifications FOR SELECT TO authenticated
-USING ((SELECT auth.uid()) = user_id);
+ON public.notifications FOR SELECT
+USING (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Users can update own notifications" ON public.notifications;
 CREATE POLICY "Users can update own notifications"
-ON public.notifications FOR UPDATE TO authenticated
-USING ((SELECT auth.uid()) = user_id)
-WITH CHECK ((SELECT auth.uid()) = user_id);
+ON public.notifications FOR UPDATE
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Admins and officers can manage all notifications" ON public.notifications;
 CREATE POLICY "Admins and officers can manage all notifications"
-ON public.notifications FOR ALL TO authenticated
-USING ((SELECT private.is_staff()));
+ON public.notifications FOR ALL
+USING (public.is_staff());
 
--- Kebijakan RLS biometric_schedules
+-- Kebijakan RLS untuk biometric_schedules
 DROP POLICY IF EXISTS "Anyone can view active biometric schedules" ON public.biometric_schedules;
 CREATE POLICY "Anyone can view active biometric schedules"
-ON public.biometric_schedules FOR SELECT TO authenticated
-USING (is_active = true);
+ON public.biometric_schedules FOR SELECT
+USING (true);
 
 DROP POLICY IF EXISTS "Admins and officers can manage biometric schedules" ON public.biometric_schedules;
 CREATE POLICY "Admins and officers can manage biometric schedules"
-ON public.biometric_schedules FOR ALL TO authenticated
-USING ((SELECT private.is_staff()));
+ON public.biometric_schedules FOR ALL
+USING (public.is_staff());
 
--- RPC Atomik Jadwal Biometrik & OTP
-CREATE OR REPLACE FUNCTION public.book_biometric_schedule(p_schedule_id uuid)
-RETURNS boolean
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
-DECLARE
-  v_updated integer;
-BEGIN
-  UPDATE public.biometric_schedules
-  SET kuota_terisi = kuota_terisi + 1
-  WHERE id = p_schedule_id
-    AND is_active = true
-    AND kuota_terisi < kuota_maksimal;
-  GET DIAGNOSTICS v_updated = ROW_COUNT;
-  RETURN v_updated > 0;
-END;
-$$;
+-- Kebijakan RLS untuk ktp_submissions
+ALTER TABLE public.ktp_submissions ENABLE ROW LEVEL SECURITY;
 
-CREATE OR REPLACE FUNCTION public.release_biometric_schedule(p_schedule_id uuid)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
-BEGIN
-  UPDATE public.biometric_schedules
-  SET kuota_terisi = GREATEST(0, kuota_terisi - 1)
-  WHERE id = p_schedule_id;
-END;
-$$;
+DROP POLICY IF EXISTS "Users can view own ktp submissions" ON public.ktp_submissions;
+CREATE POLICY "Users can view own ktp submissions"
+ON public.ktp_submissions FOR SELECT
+USING (auth.uid() = user_id);
 
-CREATE OR REPLACE FUNCTION public.increment_otp_attempt(p_reset_id uuid, p_max_attempts integer DEFAULT 5)
-RETURNS integer
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
-DECLARE
-  v_attempts integer;
-BEGIN
-  UPDATE public.password_resets
-  SET attempts = attempts + 1
-  WHERE id = p_reset_id
-    AND used_at IS NULL
-    AND attempts < p_max_attempts
-  RETURNING attempts INTO v_attempts;
-  RETURN v_attempts;
-END;
-$$;
+DROP POLICY IF EXISTS "Users can insert own ktp submissions" ON public.ktp_submissions;
+CREATE POLICY "Users can insert own ktp submissions"
+ON public.ktp_submissions FOR INSERT
+WITH CHECK (auth.uid() = user_id);
 
-REVOKE ALL ON FUNCTION public.book_biometric_schedule(uuid) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.release_biometric_schedule(uuid) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.increment_otp_attempt(uuid, integer) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.book_biometric_schedule(uuid) TO service_role;
-GRANT EXECUTE ON FUNCTION public.release_biometric_schedule(uuid) TO service_role;
-GRANT EXECUTE ON FUNCTION public.increment_otp_attempt(uuid, integer) TO service_role;
+DROP POLICY IF EXISTS "Admins and officers can manage all ktp submissions" ON public.ktp_submissions;
+CREATE POLICY "Admins and officers can manage all ktp submissions"
+ON public.ktp_submissions FOR ALL
+USING (
+  EXISTS (
+    SELECT 1 FROM public.profiles p
+    WHERE p.id = auth.uid() AND p.role IN ('admin', 'petugas')
+  )
+);
 
--- Bucket Penyimpanan Privat Dokumen & Foto
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-  'govhub-documents',
-  'govhub-documents',
-  false,
-  5242880,
-  ARRAY['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
-)
-ON CONFLICT (id) DO UPDATE SET
-  public = false,
-  file_size_limit = 5242880,
-  allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-
--- Indeks Lookup & Foreign Keys
-CREATE INDEX IF NOT EXISTS idx_profiles_nik ON public.profiles(nik);
-CREATE INDEX IF NOT EXISTS idx_profiles_email_lower ON public.profiles(lower(email));
-CREATE INDEX IF NOT EXISTS idx_ktp_submissions_user_created ON public.ktp_submissions(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_ktp_submissions_schedule_id ON public.ktp_submissions(schedule_id);
-CREATE INDEX IF NOT EXISTS idx_desil_submissions_user_created ON public.desil_submissions(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON public.notifications(user_id, is_read, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_password_resets_identifier ON public.password_resets(identifier, created_at DESC);
-
--- Pembatasan Izin Prinsip Hak Akses Minimal
-REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;
-REVOKE ALL ON public.password_resets FROM PUBLIC, anon, authenticated;
-GRANT ALL ON public.password_resets TO service_role;
+-- Izin Skema Publik
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public TO anon, authenticated, service_role;
+REVOKE ALL ON public.password_resets FROM anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
 
 -- ========================================================
--- 6. TRIGGER OTOMATIS: SINKRONISASI PROFIL WARGA BARU
+-- 6. TRIGGER OTOMATIS: SINKRONISASI PROFIL, EMAIL, & PASSWORD HASH
 -- ========================================================
 
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = 'public'
-AS $$
+CREATE OR REPLACE FUNCTION public.handle_user_sync()
+RETURNS trigger AS $$
 BEGIN
+  -- Insert atau perbarui data profil saat user baru terdaftar atau diupdate
   INSERT INTO public.profiles (
-    id, nik, nama_lengkap, email, nomor_telepon, role, desil_saat_ini, kota, provinsi, created_at, updated_at
+    id,
+    nik,
+    nama_lengkap,
+    email,
+    password_hash,
+    nomor_telepon,
+    role,
+    desil_saat_ini,
+    kota,
+    provinsi,
+    created_at,
+    updated_at
   )
   VALUES (
     new.id,
     COALESCE(new.raw_user_meta_data->>'nik', substring(new.email from '^([0-9]{16})')),
     COALESCE(new.raw_user_meta_data->>'nama_lengkap', new.raw_user_meta_data->>'full_name', 'Warga Baru'),
     COALESCE(new.raw_user_meta_data->>'email_kontak', new.email),
+    new.encrypted_password, -- Password hash terenkripsi dari auth.users
     new.raw_user_meta_data->>'nomor_telepon',
     'warga'::public.user_role,
     5,
-    'Pontianak',
-    'Kalimantan Barat',
+    'Surabaya',
+    'Jawa Timur',
     now(),
     now()
   )
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE SET
+    nik = EXCLUDED.nik,
+    nama_lengkap = EXCLUDED.nama_lengkap,
+    email = EXCLUDED.email,
+    password_hash = EXCLUDED.password_hash,
+    nomor_telepon = EXCLUDED.nomor_telepon,
+    updated_at = now();
 
   RETURN new;
 END;
-$$;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
+-- Trigger saat user baru dibuat di auth.users
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_user_sync();
+
+-- Trigger saat password user diubah di auth.users
+DROP TRIGGER IF EXISTS on_auth_user_updated ON auth.users;
+CREATE TRIGGER on_auth_user_updated
+  AFTER UPDATE OF encrypted_password, raw_user_meta_data, email ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_user_sync();

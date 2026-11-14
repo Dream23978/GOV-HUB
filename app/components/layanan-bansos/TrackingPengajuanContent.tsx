@@ -1,10 +1,8 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { resolveSignedDocumentUrl } from "@/lib/upload-document";
-import { formatWibDate } from "@/lib/format";
 import {
   ChevronLeft,
   Check,
@@ -36,7 +34,7 @@ interface TrackingPengajuanContentProps {
 }
 
 const TRACKING_STEPS = [
-  { id: 1, label: "Pengajuan dibuat" },
+  { id: 1, label: "Pengajuan di buat" },
   { id: 2, label: "Data Otomatis diverifikasi" },
   { id: 3, label: "Menunggu verifikasi dari admin" },
   { id: 4, label: "Hasil sementara" },
@@ -104,21 +102,8 @@ export function TrackingPengajuanContent({
     housePhoto: initialHousePhoto,
   });
 
-  const lastSignatureRef = useRef(
-    `${initialNomor}|${initialStatusRaw}|${initialDesilBaru}|${initialCatatan}`
-  );
-  const mountedRef = useRef(true);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
   // Sinkronkan state ketika props SSR berubah
   useEffect(() => {
-    lastSignatureRef.current = `${initialNomor}|${initialStatusRaw}|${initialDesilBaru}|${initialCatatan}`;
     setData({
       hasSubmissions: initialHasSubmissions ?? initialNomor !== "-",
       submissionId: initialSubmissionId || "",
@@ -164,39 +149,52 @@ export function TrackingPengajuanContent({
         cache: "no-store",
         headers: { "Cache-Control": "no-cache" },
       });
-      if (!res.ok || !mountedRef.current) return;
+      if (!res.ok) return;
       const json = await res.json();
-      if (!mountedRef.current || !json?.success || !Array.isArray(json.data) || json.data.length === 0) return;
+      if (!json?.success || !Array.isArray(json.data) || json.data.length === 0) return;
 
       const latest = json.data[0];
       const nextStatus: DesilSubmissionStatus = latest.status || "menunggu_verifikasi";
       const nextTarget = latest.desil_hasil_peninjauan ?? latest.desil_diajukan;
-      const nextTanggal = formatWibDate(latest.created_at, "long");
-      const nextDesilBaru = nextTarget ? `DESIL ${nextTarget}` : "-";
-      const nextNomor = latest.nomor_tiket || "-";
-      const nextCatatan = latest.catatan_verifikasi || "";
-      const nextSig = `${nextNomor}|${nextStatus}|${nextDesilBaru}|${nextCatatan}`;
+      const nextTanggal = latest.created_at
+        ? new Date(latest.created_at).toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })
+        : "-";
 
-      if (lastSignatureRef.current === nextSig) return;
-      lastSignatureRef.current = nextSig;
+      setData((prev) => {
+        const nextDesilAwal = latest.desil_lama ? `DESIL ${latest.desil_lama}` : prev.desilAwal;
+        const nextDesilBaru = nextTarget ? `DESIL ${nextTarget}` : prev.desilBaru;
+        const nextNomor = latest.nomor_tiket || prev.nomorPengajuan;
+        const nextCatatan = latest.catatan_verifikasi || "";
+        const nextPhoto = latest.foto_rumah_depan_url || prev.housePhoto;
 
-      const signedPhoto = await resolveSignedDocumentUrl(latest.foto_rumah_depan_url);
-      if (!mountedRef.current) return;
+        const changed =
+          !prev.hasSubmissions ||
+          prev.statusRaw !== nextStatus ||
+          prev.desilBaru !== nextDesilBaru ||
+          prev.nomorPengajuan !== nextNomor ||
+          prev.catatanVerifikasi !== nextCatatan;
 
-      setData((prev) => ({
-        ...prev,
-        hasSubmissions: true,
-        submissionId: latest.id || prev.submissionId,
-        nomorPengajuan: nextNomor !== "-" ? nextNomor : prev.nomorPengajuan,
-        tanggalPengajuan: nextTanggal !== "-" ? nextTanggal : prev.tanggalPengajuan,
-        desilAwal: latest.desil_lama ? `DESIL ${latest.desil_lama}` : prev.desilAwal,
-        desilBaru: nextDesilBaru !== "-" ? nextDesilBaru : prev.desilBaru,
-        statusTerakhir: getStatusLabel(nextStatus),
-        statusRaw: nextStatus,
-        catatanVerifikasi: nextCatatan,
-        housePhoto: signedPhoto || prev.housePhoto,
-      }));
-      router.refresh();
+        if (!changed) return prev;
+
+        router.refresh();
+        return {
+          ...prev,
+          hasSubmissions: true,
+          submissionId: latest.id || prev.submissionId,
+          nomorPengajuan: nextNomor,
+          tanggalPengajuan: nextTanggal,
+          desilAwal: nextDesilAwal,
+          desilBaru: nextDesilBaru,
+          statusTerakhir: getStatusLabel(nextStatus),
+          statusRaw: nextStatus,
+          catatanVerifikasi: nextCatatan,
+          housePhoto: nextPhoto,
+        };
+      });
     } catch {
       // Abaikan gangguan jaringan sementara
     }
@@ -262,7 +260,7 @@ export function TrackingPengajuanContent({
         <button
           type="button"
           onClick={() => void syncLatestSubmission()}
-          className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:border-blue-400 transition-colors cursor-pointer shadow-sm"
+          className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:border-blue-400 transition-colors cursor-pointer shadow-2xs"
           title="Perbarui status pengajuan"
         >
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -272,7 +270,7 @@ export function TrackingPengajuanContent({
       </div>
 
       {!data.hasSubmissions ? (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-8 text-center shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-8 text-center shadow-xs">
           <div className="w-14 h-14 rounded-full bg-blue-50 dark:bg-slate-700 text-[#0B57D0] dark:text-blue-400 flex items-center justify-center mx-auto mb-4">
             <Info size={28} />
           </div>
@@ -285,7 +283,7 @@ export function TrackingPengajuanContent({
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-sm mx-auto">
             <Link
               href="/dashboard/layanan-bansos/ajukan"
-              className="w-full bg-[#0B57D0] hover:bg-blue-700 text-white font-semibold text-xs md:text-sm py-2.5 px-5 rounded-xl shadow-sm transition-all text-center select-none"
+              className="w-full bg-[#0B57D0] hover:bg-blue-700 text-white font-semibold text-xs md:text-sm py-2.5 px-5 rounded-xl shadow-xs transition-all text-center select-none"
             >
               Ajukan Peninjauan Sekarang
             </Link>
@@ -300,7 +298,7 @@ export function TrackingPengajuanContent({
       ) : (
         <div className="space-y-5">
           {/* ================= CARD 1: Status Proses Pengajuan (Vertical Stepper) ================= */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200/90 dark:border-slate-700 shadow-sm p-5 md:p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200/90 dark:border-slate-700 shadow-xs p-5 md:p-6">
             <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
               <h2 className="text-base md:text-lg font-bold text-gray-900 dark:text-white">
                 Status Proses Pengajuan
@@ -358,7 +356,7 @@ export function TrackingPengajuanContent({
 
                     {/* Status Dot */}
                     <div
-                      className={`relative z-10 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm ${dotClass}`}
+                      className={`relative z-10 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 shadow-xs ${dotClass}`}
                     >
                       {stepState === "completed" ? (
                         <Check size={12} strokeWidth={3} className="text-white" />
@@ -371,7 +369,7 @@ export function TrackingPengajuanContent({
 
                     {/* Step Box */}
                     <div
-                      className={`flex-1 border rounded-lg px-4 py-2.5 shadow-sm transition-colors flex items-center justify-between gap-2 ${boxClass}`}
+                      className={`flex-1 border rounded-lg px-4 py-2.5 shadow-2xs transition-colors flex items-center justify-between gap-2 ${boxClass}`}
                     >
                       <span className={`text-xs md:text-sm ${labelClass}`}>{s.label}</span>
                       {stepState === "active" && (
@@ -392,7 +390,7 @@ export function TrackingPengajuanContent({
           </div>
 
           {/* ================= CARD 2: Tracking Pengajuan Result Summary ================= */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200/90 dark:border-slate-700 shadow-sm p-5 md:p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200/90 dark:border-slate-700 shadow-xs p-5 md:p-6">
             {/* Status Header */}
             <div className="flex items-center gap-3.5 mb-5">
               <div
@@ -481,7 +479,7 @@ export function TrackingPengajuanContent({
               <button
                 type="button"
                 onClick={() => setShowDetailModal(true)}
-                className="w-full bg-[#0B57D0] hover:bg-blue-700 active:scale-[0.98] text-white font-semibold text-xs md:text-sm py-2.5 px-4 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full bg-[#0B57D0] hover:bg-blue-700 active:scale-98 text-white font-semibold text-xs md:text-sm py-2.5 px-4 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Info size={16} />
                 <span>Lihat Detail</span>
@@ -489,7 +487,7 @@ export function TrackingPengajuanContent({
 
               <Link
                 href="/dashboard"
-                className="w-full bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-200 font-semibold text-xs md:text-sm py-2.5 px-4 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 text-center select-none"
+                className="w-full bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-200 font-semibold text-xs md:text-sm py-2.5 px-4 rounded-xl shadow-2xs transition-colors flex items-center justify-center gap-2 text-center select-none"
               >
                 <Home size={16} className="text-gray-600 dark:text-gray-300" />
                 <span>Kembali ke Beranda</span>
@@ -501,16 +499,11 @@ export function TrackingPengajuanContent({
 
       {/* ================= MODAL: Rincian Keputusan Peninjauan Desil ================= */}
       {showDetailModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="tracking-desil-detail-title"
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-        >
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-lg shadow-2xl border border-gray-200 dark:border-slate-700 p-6 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 pb-3 mb-4">
               <div>
-                <h3 id="tracking-desil-detail-title" className="text-base font-bold text-gray-900 dark:text-white">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">
                   Rincian Keputusan Peninjauan Desil
                 </h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400">

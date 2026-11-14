@@ -34,7 +34,6 @@ export function useLiveDesilSync<T>(
 ) {
   const mapRef = useRef(mapRows);
   const onSyncedRef = useRef(onSynced);
-  const inFlightRef = useRef(false);
 
   useEffect(() => {
     mapRef.current = mapRows;
@@ -42,8 +41,6 @@ export function useLiveDesilSync<T>(
   }, [mapRows, onSynced]);
 
   const syncNow = useCallback(async () => {
-    if (inFlightRef.current) return;
-    inFlightRef.current = true;
     try {
       const res = await fetch("/api/admin/desil-submissions", {
         cache: "no-store",
@@ -56,8 +53,6 @@ export function useLiveDesilSync<T>(
       }
     } catch {
       // Abaikan gangguan jaringan sementara pada background polling
-    } finally {
-      inFlightRef.current = false;
     }
   }, []);
 

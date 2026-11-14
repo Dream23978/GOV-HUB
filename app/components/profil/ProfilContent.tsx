@@ -1,16 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect } from "react";
 import { broadcastSync } from "@/app/components/AutoRefresh";
-import { createClient } from "@/lib/supabase/client";
 import { ProfilHeader } from "./ProfilHeader";
 import { ProfilUserCard } from "./ProfilUserCard";
 import { ProfilAccountInfoCard } from "./ProfilAccountInfoCard";
 import { ProfilDataGrid, ProfilDataValues } from "./ProfilDataGrid";
 import { ProfilStatusBanner } from "./ProfilStatusBanner";
-import { ProfilEditModal, ProfilEditSavePayload } from "./ProfilEditModal";
-import { Check, AlertCircle } from "lucide-react";
+import { ProfilEditModal } from "./ProfilEditModal";
+import { Check } from "lucide-react";
 
 const DEFAULT_PROFIL_DATA: ProfilDataValues = {
   namaLengkap: "Warga Terdaftar",
@@ -24,161 +22,118 @@ const DEFAULT_PROFIL_DATA: ProfilDataValues = {
 
 interface ProfilContentProps {
   initialData?: Partial<ProfilDataValues>;
-  initialAvatarUrl?: string;
-  initialTempatLahir?: string;
-  initialTanggalLahirIso?: string;
   initialTerdaftarSejak?: string;
   initialTerakhirLogin?: string;
 }
 
 export function ProfilContent({
   initialData,
-  initialAvatarUrl = "",
-  initialTempatLahir = "",
-  initialTanggalLahirIso = "",
   initialTerdaftarSejak = "-",
   initialTerakhirLogin = "-",
 }: ProfilContentProps) {
-  const router = useRouter();
-  const [data, setData] = useState<ProfilDataValues>(() => ({
-    ...DEFAULT_PROFIL_DATA,
-    ...initialData,
-  }));
-
-  const [avatarUrl, setAvatarUrl] = useState<string>(initialAvatarUrl);
-  const [tempatLahir, setTempatLahir] = useState<string>(initialTempatLahir);
-  const [tanggalLahirIso, setTanggalLahirIso] = useState<string>(initialTanggalLahirIso);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
-  const [toastState, setToastState] = useState<{ message: string; isError: boolean } | null>(null);
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    try {
-      localStorage.removeItem("govhub_user_profile");
-      localStorage.removeItem("govhub_user_avatar");
-    } catch {
-      // ignore storage errors
-    }
-    return () => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+  const [data, setData] = useState<ProfilDataValues>(() => {
+    return {
+      ...DEFAULT_PROFIL_DATA,
+      ...initialData,
     };
-  }, []);
+  });
+
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     if (!isEditModalOpen && initialData) {
       setData((prev) => ({ ...prev, ...initialData }));
     }
   }, [initialData, isEditModalOpen]);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("Perubahan profil berhasil disimpan!");
 
+  // Restore from localStorage if available
   useEffect(() => {
-    if (initialAvatarUrl) setAvatarUrl(initialAvatarUrl);
-  }, [initialAvatarUrl]);
-
-  const triggerToast = (message: string, isError = false) => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToastState({ message, isError });
-    toastTimerRef.current = setTimeout(() => {
-      setToastState(null);
-    }, 3500);
-  };
-
-  const handleAvatarChange = async (newSignedUrl: string, storagePath?: string) => {
-    if (storagePath) {
-      try {
-        const supabase = createClient();
-        const { error } = await supabase.auth.updateUser({
-          data: { avatar_url: storagePath },
-        });
-        if (error) {
-          triggerToast("Foto terunggah namun gagal menyimpan referensi profil.", true);
-          return;
-        }
-      } catch {
-        triggerToast("Gagal menyimpan referensi foto profil.", true);
-        return;
+    try {
+      const saved = localStorage.getItem("govhub_user_profile");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setData((prev) => ({ ...prev, ...parsed }));
       }
+      const savedAvatar = localStorage.getItem("govhub_user_avatar");
+      if (savedAvatar) {
+        setAvatarUrl(savedAvatar);
+      }
+    } catch {
+      // ignore storage errors
     }
-    if (newSignedUrl) setAvatarUrl(newSignedUrl);
-    broadcastSync();
-    router.refresh();
+  }, []);
+
+  const handleAvatarChange = (newUrl: string) => {
+    setAvatarUrl(newUrl);
+    try {
+      localStorage.setItem("govhub_user_avatar", newUrl);
+    } catch {
+      // ignore
+    }
     triggerToast("Foto profil berhasil diperbarui");
   };
 
-  const handleSaveData = async (
-    payload: ProfilEditSavePayload
-  ): Promise<{ success: boolean; error?: string }> => {
+  const handleSaveData = async (newData: ProfilDataValues) => {
+    setData(newData);
     try {
-      const normalizedGender =
-        /laki/i.test(payload.jenisKelamin)
-          ? "Laki-laki"
-          : /perempuan/i.test(payload.jenisKelamin)
-          ? "Perempuan"
-          : "";
+      localStorage.setItem("govhub_user_profile", JSON.stringify(newData));
+    } catch {
+      // ignore
+    }
 
-      const res = await fetch("/api/profile", {
+    // Pisahkan tempat dan tanggal lahir jika diinput dalam satu baris (format: "Tempat, Tanggal")
+    let tempatLahir: string | undefined = undefined;
+    let tanggalLahir: string | undefined = undefined;
+    if (newData.tempatTanggalLahir && newData.tempatTanggalLahir.includes(",")) {
+      const parts = newData.tempatTanggalLahir.split(",");
+      tempatLahir = parts[0]?.trim();
+      tanggalLahir = parts[1]?.trim();
+    } else if (newData.tempatTanggalLahir) {
+      tempatLahir = newData.tempatTanggalLahir.trim();
+    }
+
+    // Simpan permanen ke database Supabase via PUT /api/profile
+    try {
+      await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          nama_lengkap: payload.namaLengkap,
-          alamat: payload.alamat,
-          nomor_telepon: payload.noTelepon,
-          jenis_kelamin: normalizedGender || null,
-          tempat_lahir: payload.tempatLahir || null,
-          tanggal_lahir: payload.tanggalLahirIso || null,
+          nama_lengkap: newData.namaLengkap,
+          alamat: newData.alamat,
+          nomor_telepon: newData.noTelepon,
+          jenis_kelamin: newData.jenisKelamin,
+          tempat_lahir: tempatLahir,
+          tanggal_lahir: tanggalLahir,
         }),
       });
-
-      const json = await res.json().catch(() => null);
-      if (!res.ok || !json?.success) {
-        const errMsg = json?.error || "Gagal menyimpan perubahan profil ke server.";
-        triggerToast(errMsg, true);
-        return { success: false, error: errMsg };
-      }
-
-      const formattedDate = payload.tanggalLahirIso
-        ? new Date(`${payload.tanggalLahirIso}T00:00:00`).toLocaleDateString("id-ID", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          })
-        : "";
-
-      setTempatLahir(payload.tempatLahir);
-      setTanggalLahirIso(payload.tanggalLahirIso);
-      setData((prev) => ({
-        ...prev,
-        namaLengkap: payload.namaLengkap,
-        jenisKelamin: normalizedGender || prev.jenisKelamin,
-        alamat: payload.alamat,
-        noTelepon: payload.noTelepon,
-        tempatTanggalLahir:
-          [payload.tempatLahir, formattedDate].filter(Boolean).join(", ") || prev.tempatTanggalLahir,
-      }));
-
       broadcastSync();
-      router.refresh();
-      triggerToast("Data profil berhasil disimpan");
-      return { success: true };
-    } catch {
-      const errMsg = "Terjadi kesalahan jaringan saat menyimpan profil.";
-      triggerToast(errMsg, true);
-      return { success: false, error: errMsg };
+    } catch (err) {
+      console.warn("Gagal update profil ke database:", err);
     }
+
+    triggerToast("Data profil berhasil disimpan");
+  };
+
+  const triggerToast = (msg?: string) => {
+    if (msg) {
+      setToastMessage(msg);
+    }
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+    }, 3000);
   };
 
   return (
     <div className="flex flex-col w-full pb-10">
       {/* Toast Notification */}
-      {toastState && (
-        <div
-          role="status"
-          className={`fixed top-20 right-6 z-50 ${
-            toastState.isError ? "bg-rose-600" : "bg-[#107C41]"
-          } text-white px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-semibold animate-in fade-in slide-in-from-top-2 duration-200`}
-        >
-          {toastState.isError ? <AlertCircle size={16} /> : <Check size={16} strokeWidth={3} />}
-          <span>{toastState.message}</span>
+      {showToast && (
+        <div className="fixed top-20 right-6 z-50 bg-[#107C41] text-white px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-semibold animate-in fade-in slide-in-from-top-2 duration-200">
+          <Check size={16} strokeWidth={3} />
+          <span>{toastMessage}</span>
         </div>
       )}
 
@@ -229,8 +184,6 @@ export function ProfilContent({
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         data={data}
-        initialTempatLahir={tempatLahir}
-        initialTanggalLahirIso={tanggalLahirIso}
         onSave={handleSaveData}
       />
     </div>

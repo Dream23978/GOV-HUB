@@ -1,45 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import {
-  ADMIN_SESSION_COOKIE,
-  getAdminPortalBasePath,
-  verifyAdminSessionToken,
-} from "@/lib/security";
 import { hasEnvVars } from "../utils";
 
-function redirectWithCookies(
-  request: NextRequest,
-  targetPathname: string,
-  supabaseResponse: NextResponse,
-  clearAdminCookie = false
-): NextResponse {
-  const url = request.nextUrl.clone();
-  url.pathname = targetPathname;
-  url.search = "";
-  const response = NextResponse.redirect(url);
-
-  for (const cookie of supabaseResponse.cookies.getAll()) {
-    response.cookies.set(cookie);
-  }
-  if (clearAdminCookie) {
-    response.cookies.delete(ADMIN_SESSION_COOKIE);
-  }
-  return response;
-}
-
 export async function updateSession(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
-  let supabaseResponse = NextResponse.next({ request });
-
-  const isProtectedCitizenPath = pathname === "/dashboard" || pathname.startsWith("/dashboard/");
-  const isAdminLoginPath = pathname === "/admin/login";
-  const isProtectedAdminPath =
-    pathname.startsWith("/admin/") && !isAdminLoginPath;
+  let supabaseResponse = NextResponse.next({
+    request,
+  });
 
   if (!hasEnvVars) {
-    if (isProtectedCitizenPath || isProtectedAdminPath) {
-      return new NextResponse("Konfigurasi layanan belum tersedia.", { status: 503 });
-    }
     return supabaseResponse;
   }
 
@@ -53,64 +21,102 @@ export async function updateSession(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
+            request.cookies.set(name, value),
           );
-          supabaseResponse = NextResponse.next({ request });
+          supabaseResponse = NextResponse.next({
+            request,
+          });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options),
           );
         },
       },
-    }
+    },
   );
 
-  // Use getUser() so Auth JWT is validated with Supabase Auth server on every request
+  // Gunakan getUser() yang valid & selaras dengan Server Components
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // 1. Citizen dashboard routes require a valid Supabase Auth session
-  if (!user && isProtectedCitizenPath) {
-    return redirectWithCookies(request, "/auth/login", supabaseResponse);
+  const pathname = request.nextUrl.pathname;
+
+  // 1. Jika user belum login dan mengakses halaman dashboard/layanan yang diproteksi
+  if (!user && pathname.startsWith("/dashboard")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/login";
+    return NextResponse.redirect(url);
   }
 
-  // 2. Signed-in citizens on login/signup go straight to citizen dashboard
+  // 2. Jika user sudah login dan mencoba membuka halaman login atau pendaftaran
   if (user && (pathname === "/auth/login" || pathname === "/auth/sign-up")) {
-    return redirectWithCookies(request, "/dashboard", supabaseResponse);
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
   }
 
-  // 3. Strict HMAC-signed session check & cross-agency isolation for /admin/*
-  const adminCookie = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
-  if (isAdminLoginPath || isProtectedAdminPath) {
-    const adminSession = await verifyAdminSessionToken(adminCookie);
+  // 3. Proteksi Akses Portal Admin Kedinasan (/admin/*)
+  const adminCookie = request.cookies.get("govhub_admin_session")?.value;
+  const isAdminLoginPath =
+    pathname === "/admin/login" ||
+    pathname.startsWith("/admin/login") ||
+    pathname.endsWith("/login");
 
-    if (isProtectedAdminPath) {
-      if (!adminSession) {
-        return redirectWithCookies(request, "/admin/login", supabaseResponse, Boolean(adminCookie));
-      }
+  // Validasi format cookie admin yang sah: {instansi}_{tingkat}
+  const validAdminCookies = new Set([
+    "pusat_pusat",
+    "dukcapil_kota",
+    "dukcapil_kecamatan",
+    "dukcapil_pusat",
+    "dinsos_kota",
+    "dinsos_kecamatan",
+    "dinsos_provinsi",
+    "dinsos_pusat",
+  ]);
+  const isValidAdminSession = adminCookie && validAdminCookies.has(adminCookie);
 
-      const assignedBasePath = getAdminPortalBasePath(
-        adminSession.instansi,
-        adminSession.tingkat
-      );
-      const isAllowedPortal =
-        assignedBasePath !== "/admin/login" &&
-        (pathname === assignedBasePath || pathname.startsWith(`${assignedBasePath}/`));
-
-      if (!isAllowedPortal) {
-        return redirectWithCookies(request, assignedBasePath, supabaseResponse);
-      }
+  if (pathname.startsWith("/admin") && !isAdminLoginPath) {
+    if (!isValidAdminSession) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin/login";
+      return NextResponse.redirect(url);
     }
 
-    if (isAdminLoginPath && adminSession) {
-      const assignedBasePath = getAdminPortalBasePath(
-        adminSession.instansi,
-        adminSession.tingkat
-      );
-      if (assignedBasePath !== "/admin/login") {
-        return redirectWithCookies(request, assignedBasePath, supabaseResponse);
-      }
+    // Role-Based Access Control (RBAC) Path Isolation:
+    // Mencegah admin Dukcapil mengakses rute Dinsos atau sebaliknya
+    const [instansi, tingkat] = adminCookie.split("_");
+    if (instansi === "dukcapil" && pathname.startsWith("/admin/dinsos")) {
+      const url = request.nextUrl.clone();
+      url.pathname = tingkat === "kota" ? "/admin/dukcapil/kota/dashboard" : "/admin/dukcapil/kecamatan/dashboard";
+      return NextResponse.redirect(url);
     }
+    if (instansi === "dinsos" && pathname.startsWith("/admin/dukcapil")) {
+      const url = request.nextUrl.clone();
+      url.pathname =
+        tingkat === "provinsi"
+          ? "/admin/dinsos/provinsi/dashboard"
+          : tingkat === "kota"
+          ? "/admin/dinsos/kota/dashboard"
+          : "/admin/dinsos/kecamatan/dashboard";
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // Jika sudah login admin dan mencoba membuka /admin/login
+  if (isValidAdminSession && isAdminLoginPath) {
+    const [instansi, tingkat] = adminCookie.split("_");
+    const url = request.nextUrl.clone();
+    if (instansi === "pusat" || tingkat === "provinsi" || tingkat === "pusat") {
+      url.pathname = "/admin/dashboard";
+    } else if (instansi === "dukcapil") {
+      url.pathname = tingkat === "kota" ? "/admin/dukcapil/kota/dashboard" : "/admin/dukcapil/kecamatan/dashboard";
+    } else {
+      url.pathname =
+        tingkat === "kota"
+          ? "/admin/dinsos/kota/dashboard"
+          : "/admin/dinsos/kecamatan/dashboard";
+    }
+    return NextResponse.redirect(url);
   }
 
   return supabaseResponse;

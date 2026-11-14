@@ -257,7 +257,7 @@ export function PengajuanDesilKecamatanContent({
   }, [listData, searchQuery, selectedStatus, selectedDate]);
 
   return (
-    <div className="flex flex-col w-full pb-10">
+    <div className="flex flex-col w-full pb-10 select-none">
       {/* ── Page Header: "< Pengajuan Peninjauan Desil / Kelola dan pantau pengajuan desil warga." ── */}
       <div className="flex items-start gap-2.5 sm:gap-3 mb-5">
         <button
@@ -288,7 +288,7 @@ export function PengajuanDesilKecamatanContent({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Cari NIK / Nama"
-          className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-white dark:bg-slate-800 rounded-xl border border-gray-300/90 dark:border-slate-700 shadow-sm text-xs sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+          className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-white dark:bg-slate-800 rounded-xl border border-gray-300/90 dark:border-slate-700 shadow-2xs text-xs sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
         />
         {searchQuery && (
           <button
@@ -311,7 +311,7 @@ export function PengajuanDesilKecamatanContent({
               setIsStatusDropdownOpen(!isStatusDropdownOpen);
               setIsDateDropdownOpen(false);
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-gray-300/90 dark:border-slate-700 shadow-sm text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/60 transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-gray-300/90 dark:border-slate-700 shadow-2xs text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/60 transition-all cursor-pointer"
           >
             <span>
               {selectedStatus === "all"
@@ -364,7 +364,7 @@ export function PengajuanDesilKecamatanContent({
               setIsDateDropdownOpen(!isDateDropdownOpen);
               setIsStatusDropdownOpen(false);
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-gray-300/90 dark:border-slate-700 shadow-sm text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/60 transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-gray-300/90 dark:border-slate-700 shadow-2xs text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/60 transition-all cursor-pointer"
           >
             <span>
               {selectedDate === "all" ? "Tanggal" : selectedDate}
@@ -402,7 +402,7 @@ export function PengajuanDesilKecamatanContent({
       </div>
 
       {/* ── Table / List Container: 5 Baris 100% Sesuai Screenshot ── */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200/90 dark:border-slate-700 shadow-sm divide-y divide-gray-200/80 dark:divide-slate-700 overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200/90 dark:border-slate-700 shadow-2xs divide-y divide-gray-200/80 dark:divide-slate-700 overflow-hidden">
         {filteredSubmissions.length === 0 ? (
           <div className="p-10 text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400">
             Tidak ada pengajuan desil yang sesuai dengan pencarian atau filter.
@@ -417,7 +417,7 @@ export function PengajuanDesilKecamatanContent({
               <div className="flex items-center gap-3.5 min-w-0">
                 {/* Circular Initial Avatar */}
                 <div
-                  className={`w-11 h-11 rounded-full ${item.bgInitial} ${item.textInitial} flex items-center justify-center font-bold text-sm sm:text-base flex-shrink-0 shadow-sm select-none`}
+                  className={`w-11 h-11 rounded-full ${item.bgInitial} ${item.textInitial} flex items-center justify-center font-bold text-sm sm:text-base flex-shrink-0 shadow-2xs select-none`}
                 >
                   {item.initial}
                 </div>
@@ -469,7 +469,7 @@ export function PengajuanDesilKecamatanContent({
 
       {/* ── Modal Detail Verifikasi Pengajuan Warga (Khusus Kecamatan: Hanya Tombol Tutup) ── */}
       {selectedSubmission && (
-        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-xl shadow-2xl border border-gray-200 dark:border-slate-700 p-6 max-h-[92vh] overflow-y-auto animate-in fade-in zoom-in-95">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 pb-3 mb-4">

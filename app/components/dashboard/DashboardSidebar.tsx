@@ -27,10 +27,10 @@ const navItems = [
 export function DashboardSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { theme, resolvedTheme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const isDark = (resolvedTheme || theme) === "dark";
+  const isDark = theme === "dark";
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -149,10 +149,7 @@ export function DashboardSidebar() {
     </aside>
 
     {/* Mobile Bottom Navigation Bar (visible below md screens) */}
-    <nav
-      aria-label="Navigasi Utama"
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0E3F9A]/95 dark:bg-[#091E45]/95 backdrop-blur-md border-t border-white/20 px-1 py-1 flex items-center justify-around shadow-2xl select-none"
-    >
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0E3F9A]/95 dark:bg-[#091E45]/95 backdrop-blur-md border-t border-white/20 px-2 py-1 flex items-center justify-around shadow-2xl select-none">
       {navItems.slice(0, 5).map(({ href, icon: Icon }) => {
         const isActive =
           pathname === href ||
@@ -165,14 +162,14 @@ export function DashboardSidebar() {
             : href.includes("bansos")
             ? "Bansos"
             : href.includes("pengajuan")
-            ? "Ajuan"
-            : "Profil";
+            ? "Pengajuan"
+            : "Notif";
 
         return (
           <Link
             key={href}
             href={href}
-            className={`flex flex-col items-center justify-center py-1 px-1.5 min-w-0 rounded-xl transition-all ${
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
               isActive
                 ? "text-white font-bold bg-white/20 scale-105"
                 : "text-white/70 hover:text-white"

@@ -75,7 +75,7 @@ export function DataWargaDesilContent({
   }, [dataList, searchQuery, selectedStatus, selectedKecamatan]);
 
   return (
-    <div className="flex flex-col w-full pb-10">
+    <div className="flex flex-col w-full pb-10 select-none">
       {/* ── Page Header: "< Data Warga / Detail data warga beserta status desil ajuan" ── */}
       <div className="flex items-start gap-2.5 sm:gap-3 mb-5">
         <button
@@ -106,7 +106,7 @@ export function DataWargaDesilContent({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Cari NIK / Nama"
-          className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-white dark:bg-slate-800 rounded-xl border border-gray-300/90 dark:border-slate-700 shadow-sm text-xs sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+          className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-white dark:bg-slate-800 rounded-xl border border-gray-300/90 dark:border-slate-700 shadow-2xs text-xs sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
         />
         {searchQuery && (
           <button
@@ -129,7 +129,7 @@ export function DataWargaDesilContent({
               setIsStatusDropdownOpen(!isStatusDropdownOpen);
               setIsKecamatanDropdownOpen(false);
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-gray-300/90 dark:border-slate-700 shadow-sm text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/60 transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-gray-300/90 dark:border-slate-700 shadow-2xs text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/60 transition-all cursor-pointer"
           >
             <span>
               {selectedStatus === "all"
@@ -176,7 +176,7 @@ export function DataWargaDesilContent({
               setIsKecamatanDropdownOpen(!isKecamatanDropdownOpen);
               setIsStatusDropdownOpen(false);
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-gray-300/90 dark:border-slate-700 shadow-sm text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/60 transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-gray-300/90 dark:border-slate-700 shadow-2xs text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/60 transition-all cursor-pointer"
           >
             <span>
               {selectedKecamatan === "all" ? "Status Kecamatan" : selectedKecamatan}
@@ -188,13 +188,9 @@ export function DataWargaDesilContent({
             <div className="absolute left-0 top-full mt-1.5 w-52 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-lg py-1.5 z-30 animate-in fade-in zoom-in-95">
               {[
                 { key: "all", label: "Semua Kecamatan" },
-                ...Array.from(
-                  new Set(
-                    dataList
-                      .map((w) => w.kecamatan.replace(/^Kecamatan\s+/i, "").trim())
-                      .filter((k) => Boolean(k) && k !== "-")
-                  )
-                ).map((k) => ({ key: k, label: `Kecamatan ${k}` })),
+                { key: "Genteng", label: "Kecamatan Genteng" },
+                { key: "Tegalsari", label: "Kecamatan Tegalsari" },
+                { key: "Wonokromo", label: "Kecamatan Wonokromo" },
               ].map((opt) => (
                 <button
                   key={opt.key}
@@ -218,7 +214,7 @@ export function DataWargaDesilContent({
       </div>
 
       {/* ── Tabel Data Warga (100% Sesuai Screenshot Mockup) ── */}
-      <div className="w-full bg-white dark:bg-slate-800 rounded-2xl border border-gray-200/90 dark:border-slate-700 shadow-sm overflow-hidden">
+      <div className="w-full bg-white dark:bg-slate-800 rounded-2xl border border-gray-200/90 dark:border-slate-700 shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[580px] sm:min-w-[640px]">
             {/* Table Header: Biru Royal Sesuai Screenshot */}
@@ -270,7 +266,7 @@ export function DataWargaDesilContent({
                       <button
                         type="button"
                         onClick={() => setSelectedWarga(item)}
-                        className="bg-black hover:bg-gray-800 active:scale-95 text-white font-semibold text-xs px-4 py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap shadow-sm"
+                        className="bg-black hover:bg-gray-800 active:scale-95 text-white font-semibold text-xs px-4 py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap shadow-xs"
                       >
                         Lihat Detail
                       </button>
@@ -285,7 +281,7 @@ export function DataWargaDesilContent({
 
       {/* ── Modal Detail Data Warga ── */}
       {selectedWarga && (
-        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-lg shadow-2xl border border-gray-200 dark:border-slate-700 p-6 max-h-[92vh] overflow-y-auto animate-in fade-in zoom-in-95">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 pb-3 mb-4">
@@ -335,7 +331,7 @@ export function DataWargaDesilContent({
               </div>
 
               {/* Data Detail Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-xl bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700">
+              <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700">
                 <div>
                   <span className="text-gray-500 block text-[11px]">Tempat, Tanggal Lahir</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
@@ -360,7 +356,7 @@ export function DataWargaDesilContent({
                     {selectedWarga.pendapatan}
                   </span>
                 </div>
-                <div className="sm:col-span-2">
+                <div className="col-span-2">
                   <span className="text-gray-500 block text-[11px]">No. Telepon / WhatsApp</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
                     {selectedWarga.noTelepon}

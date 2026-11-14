@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export const metadata = {
   title: "Ajukan KTP Baru | GOV-HUB",
-  description: "Pengajuan KTP Elektronik tanpa fotokopi berkas.",
+  description: "Pengajuan KTP Elektronil tanpa fotokopi berkas.",
 };
 
 async function getProfileData() {

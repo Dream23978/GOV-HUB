@@ -2,7 +2,6 @@
 
 import React from "react";
 import { Check } from "lucide-react";
-import { getDesilDefinition } from "@/lib/desil";
 
 interface DesilStatusCardProps {
   desil?: number | string;
@@ -17,14 +16,13 @@ export function DesilStatusCard({
   sumberData = ["DTKS", "BPS", "Dukcapil"],
   statusText = "Terdaftar dalam Data Kesejahteraan",
 }: DesilStatusCardProps) {
-  const desilInfo = getDesilDefinition(desil);
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-300/80 dark:border-slate-700 shadow-sm p-5 md:p-6 w-full">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 md:gap-8">
         {/* Left Side: Icon, Label, Desil, and Badge */}
         <div className="flex items-start sm:items-center gap-4 flex-1">
           {/* Blue Family / Users Icon Badge */}
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#E8F0FE] dark:bg-blue-950/60 flex items-center justify-center flex-shrink-0 text-[#2563EB] dark:text-blue-400 shadow-sm">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#E8F0FE] dark:bg-blue-950/60 flex items-center justify-center flex-shrink-0 text-[#2563EB] dark:text-blue-400 select-none shadow-xs">
             <svg
               className="w-8 h-8 sm:w-9 sm:h-9"
               viewBox="0 0 24 24"
@@ -54,16 +52,6 @@ export function DesilStatusCard({
             <span className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white leading-tight mt-0.5">
               Desil {desil}
             </span>
-            {desilInfo && (
-              <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 mt-0.5">
-                {desilInfo.kategori}
-              </span>
-            )}
-            {desilInfo && (
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 max-w-sm mt-0.5 line-clamp-2">
-                {desilInfo.deskripsi}
-              </p>
-            )}
 
             {/* Status Pill Badge */}
             <div className="mt-2.5">

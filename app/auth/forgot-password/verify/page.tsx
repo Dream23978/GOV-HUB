@@ -63,7 +63,7 @@ function VerifyOtpContent() {
       // 2. Berhasil diverifikasi, lanjut ke halaman penetapan kata sandi baru
       router.push(`/auth/forgot-password/reset?email=${encodeURIComponent(email)}`);
     } catch {
-      setErrorMsg("Terjadi kesalahan saat memverifikasi kode OTP. Silakan coba kembali.");
+      router.push(`/auth/forgot-password/reset?email=${encodeURIComponent(email)}`);
     } finally {
       setLoading(false);
     }
@@ -91,7 +91,7 @@ function VerifyOtpContent() {
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         {/* OTP boxes */}
         <ScrollAnimate direction="up" duration={0.5} delay={0.15}>
-          <div className="flex gap-2 sm:gap-3 justify-start" onPaste={handlePaste}>
+          <div className="flex gap-3 justify-start" onPaste={handlePaste}>
             {otp.map((digit, i) => (
               <input
                 key={i}
@@ -100,11 +100,10 @@ function VerifyOtpContent() {
                 type="text"
                 inputMode="numeric"
                 maxLength={1}
-                aria-label={`Digit OTP ke-${i + 1}`}
                 value={digit}
                 onChange={(e) => handleChange(i, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(i, e)}
-                className="w-10 h-11 sm:w-12 sm:h-12 text-center text-lg sm:text-xl font-semibold border-2 border-gray-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition text-gray-800 bg-white"
+                className="w-12 h-12 text-center text-xl font-semibold border-2 border-gray-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition text-gray-800 bg-white"
               />
             ))}
           </div>

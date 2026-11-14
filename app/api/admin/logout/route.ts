@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
-import { ADMIN_SESSION_COOKIE } from "@/lib/security";
 
-export async function POST(request: Request) {
-  const isHttps =
-    request.headers.get("x-forwarded-proto") === "https" ||
-    new URL(request.url).protocol === "https:";
-
+export async function POST() {
   const response = NextResponse.json({ success: true });
-  response.cookies.set(ADMIN_SESSION_COOKIE, "", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: isHttps,
+  response.cookies.set("govhub_admin_session", "", {
+    path: "/",
+    maxAge: 0,
+    expires: new Date(0),
+  });
+  return response;
+}
+
+export async function GET(request: Request) {
+  const url = new URL("/admin/login", request.url);
+  const response = NextResponse.redirect(url);
+  response.cookies.set("govhub_admin_session", "", {
     path: "/",
     maxAge: 0,
     expires: new Date(0),

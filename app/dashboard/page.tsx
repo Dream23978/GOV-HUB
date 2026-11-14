@@ -19,7 +19,7 @@ export default function DashboardPage() {
           <div className="h-[72px] bg-gray-200 dark:bg-slate-700 rounded-2xl" />
 
           {/* Skeleton service cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="h-[170px] bg-gray-200 dark:bg-slate-700 rounded-2xl" />
             <div className="h-[170px] bg-gray-200 dark:bg-slate-700 rounded-2xl" />
           </div>

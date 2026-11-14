@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { TrackingKtpContent } from "@/app/components/layanan-ktp/TrackingKtpContent";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { maskNik } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +61,12 @@ async function getTrackingPageData() {
       authData?.user?.user_metadata?.nama_lengkap ||
       "Warga";
     const rawNik = profile?.nik || authData?.user?.user_metadata?.nik || "";
-    const maskedNik = rawNik ? `NIK: ${maskNik(rawNik)}` : "NIK: -";
+    const maskedNik =
+      rawNik.length >= 8
+        ? `NIK: ********${rawNik.slice(-4)}`
+        : rawNik
+        ? `NIK: ${rawNik}`
+        : "NIK: -";
 
     // Map status database ke status tampilan UI
     let statusText = "Verifikasi Data";
@@ -84,17 +88,9 @@ async function getTrackingPageData() {
       statusBadgeText = "Proses";
     }
 
-    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
-    const completedTimestampStr =
-      submission?.completed_at || submission?.updated_at || submission?.created_at;
-    const completedAtMs = completedTimestampStr ? Date.parse(completedTimestampStr) : NaN;
-    const isCompleted = submission?.status === "selesai";
-    const isCompletedExpired =
-      isCompleted && !Number.isNaN(completedAtMs) && Date.now() - completedAtMs >= SEVEN_DAYS_MS;
-
     return {
-      hasSubmission: !!submission && !isCompletedExpired,
-      isCompleted: isCompletedExpired,
+      hasSubmission: !!submission && submission.status !== "selesai",
+      isCompleted: submission?.status === "selesai",
       submissionRaw: submission,
       tracking: {
         nomorPengajuan: submission?.nomor_tiket || "",
@@ -102,8 +98,6 @@ async function getTrackingPageData() {
         tanggalPengajuan: formattedDate || "-",
         statusBadge: statusBadgeText,
         statusRaw: submission?.status,
-        jenisLayanan: submission?.jenis_pengajuan || "Pembuatan KTP-el",
-        catatanPetugas: submission?.catatan_petugas || null,
       },
       profile: {
         nama: fallbackNama,

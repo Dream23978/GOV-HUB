@@ -1,10 +1,7 @@
 import React from "react";
 import { AdminDashboardLayout } from "@/app/components/admin/AdminDashboardLayout";
 import { DataWargaDesilContent } from "@/app/components/admin/dinsos/DataWargaDesilContent";
-import {
-  getAdminDataWarga,
-  requireAdminPageSession,
-} from "@/lib/services/admin.service";
+import { getAdminDataWarga } from "@/lib/services/admin.service";
 
 export const metadata = {
   title: "Data Warga - Dinsos Kecamatan | GOV-HUB",
@@ -12,19 +9,18 @@ export const metadata = {
 };
 
 export default async function DinsosKecamatanDataWargaPage() {
-  const session = await requireAdminPageSession("dinsos", "kecamatan");
-  const result = await getAdminDataWarga();
+  const result = await getAdminDataWarga({ kecamatan: "Genteng" });
 
   return (
     <AdminDashboardLayout
       instansi="dinsos"
       instansiName="Dinas Sosial"
       roleTitle="Admin Kecamatan"
-      adminName={session.nama}
-      wilayahLabel={session.wilayahLabel}
+      adminName="Petugas Desil Genteng"
       basePath="/admin/dinsos/kecamatan/dashboard"
     >
       <DataWargaDesilContent initialWargaData={result?.data || []} />
     </AdminDashboardLayout>
   );
 }
+

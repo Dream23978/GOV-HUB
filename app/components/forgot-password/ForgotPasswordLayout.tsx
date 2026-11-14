@@ -41,19 +41,18 @@ export function ForgotPasswordLayout({ children }: { children: ReactNode }) {
       {/* Main card */}
       <div className="relative z-10 w-full max-w-3xl mx-4 rounded-3xl overflow-hidden shadow-2xl flex min-h-[420px]">
         {/* Left — Garuda image */}
-        <div className="hidden md:block relative w-[42%] flex-shrink-0">
+        <div className="relative w-[42%] flex-shrink-0">
           <Image
             src="/garuda.png"
             alt="Garuda Pancasila"
             fill
-            sizes="(max-width: 768px) 0px, 320px"
             className="object-cover object-center"
             priority
           />
         </div>
 
         {/* Right — slot */}
-        <div className="flex-1 bg-white/90 backdrop-blur-sm flex flex-col justify-center px-6 py-8 sm:px-10 sm:py-12 overflow-y-auto">
+        <div className="flex-1 bg-white/90 backdrop-blur-sm flex flex-col justify-center px-10 py-12 overflow-y-auto">
           {children}
         </div>
       </div>

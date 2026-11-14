@@ -30,9 +30,7 @@ const signUpSchema = z
       .string()
       .min(8, "Password minimal 8 karakter")
       .regex(/[A-Z]/, "Password harus mengandung minimal 1 huruf kapital")
-      .regex(/[a-z]/, "Password harus mengandung minimal 1 huruf kecil")
-      .regex(/[0-9]/, "Password harus mengandung minimal 1 angka")
-      .regex(/[^A-Za-z0-9]/, "Password harus mengandung minimal 1 simbol khusus"),
+      .regex(/[0-9]/, "Password harus mengandung minimal 1 angka"),
     confirmPassword: z.string().min(1, "Konfirmasi password wajib diisi"),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -99,7 +97,7 @@ export function SignUpFormPanel() {
   };
 
   return (
-    <div className="flex flex-col justify-center h-full px-6 sm:px-10 md:px-14 lg:px-16 py-10 sm:py-12">
+    <div className="flex flex-col justify-center h-full px-10 md:px-14 lg:px-16 py-12">
       {/* Heading */}
       <ScrollAnimate direction="up" duration={0.5} delay={0.05}>
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
@@ -107,7 +105,7 @@ export function SignUpFormPanel() {
         </h1>
         <p className="text-sm text-gray-500 mb-8 leading-relaxed max-w-xs">
           Daftarkan akun GOV-HUB Anda untuk mengakses layanan publik dengan
-          mudah dan aman.
+          mudah aman.
         </p>
       </ScrollAnimate>
 

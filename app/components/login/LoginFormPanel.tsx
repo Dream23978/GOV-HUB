@@ -55,22 +55,16 @@ export function LoginFormPanel() {
   };
 
   return (
-    <div className="flex flex-col justify-center h-full px-6 sm:px-10 md:px-14 lg:px-16 py-10 sm:py-12">
+    <div className="flex flex-col justify-center h-full px-10 md:px-14 lg:px-16 py-12">
       {/* Heading */}
       <ScrollAnimate direction="up" duration={0.5} delay={0.05}>
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
           Selamat Datang
         </h1>
         <p className="text-sm text-gray-500 mb-8 leading-relaxed max-w-xs">
-          Masuk ke akun GOV-HUB Anda untuk mengakses layanan publik dengan mudah dan aman.
+          Masuk ke akun GOV-HUB Anda untuk mengakses layanan publik dengan mudah aman.
         </p>
       </ScrollAnimate>
-
-      {errors.general && (
-        <div role="alert" className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium">
-          {errors.general}
-        </div>
-      )}
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">

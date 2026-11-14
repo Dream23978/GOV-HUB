@@ -20,7 +20,7 @@ export function AdminHeader({
   onToggleSidebar,
 }: AdminHeaderProps) {
   return (
-    <header className="w-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-gray-200/80 dark:border-slate-700/80 px-4 sm:px-6 py-3 flex items-center justify-between shadow-sm sticky top-0 z-30">
+    <header className="w-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-gray-200/80 dark:border-slate-700/80 px-4 sm:px-6 py-3 flex items-center justify-between shadow-2xs select-none sticky top-0 z-10">
       {/* Brand Logo in Header */}
       <div className="flex items-center gap-2 sm:gap-2.5">
         {onToggleSidebar && (
@@ -33,7 +33,7 @@ export function AdminHeader({
             <Menu size={20} />
           </button>
         )}
-        <div className="w-8 h-8 rounded-full bg-[#1b3a6b] text-white flex items-center justify-center shadow-sm">
+        <div className="w-8 h-8 rounded-full bg-[#1b3a6b] text-white flex items-center justify-center shadow-xs">
           <Building2 size={16} />
         </div>
         <div className="flex items-center gap-2">

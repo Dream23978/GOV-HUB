@@ -17,7 +17,7 @@ export function LayananBansosSection() {
         {/* Left: Icon & Description */}
         <div className="flex items-start sm:items-center gap-4">
           {/* Green Document with Pen Icon Badge */}
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#E6F4EA] dark:bg-emerald-950/60 flex items-center justify-center flex-shrink-0 text-[#16A34A] dark:text-emerald-400 shadow-sm">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#E6F4EA] dark:bg-emerald-950/60 flex items-center justify-center flex-shrink-0 text-[#16A34A] dark:text-emerald-400 select-none shadow-xs">
             <svg
               className="w-7 h-7 sm:w-8 sm:h-8"
               viewBox="0 0 24 24"

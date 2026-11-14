@@ -60,7 +60,7 @@ export function RingkasanPengajuanDesilCard({
 
           {/* Step 1: Data Identitas */}
           <div className="flex flex-col items-center z-10">
-            <div className="w-8 h-8 rounded-full bg-[#16a34a] text-white flex items-center justify-center shadow-sm">
+            <div className="w-8 h-8 rounded-full bg-[#16a34a] text-white flex items-center justify-center shadow-xs">
               <Check size={16} strokeWidth={3} />
             </div>
             <span className="text-[11px] md:text-xs font-medium text-gray-800 dark:text-gray-200 mt-1.5 text-center">
@@ -70,7 +70,7 @@ export function RingkasanPengajuanDesilCard({
 
           {/* Step 2: Kondisi Ekonomi */}
           <div className="flex flex-col items-center z-10">
-            <div className="w-8 h-8 rounded-full bg-[#16a34a] text-white flex items-center justify-center shadow-sm">
+            <div className="w-8 h-8 rounded-full bg-[#16a34a] text-white flex items-center justify-center shadow-xs">
               <Check size={16} strokeWidth={3} />
             </div>
             <span className="text-[11px] md:text-xs font-medium text-gray-800 dark:text-gray-200 mt-1.5 text-center">
@@ -80,7 +80,7 @@ export function RingkasanPengajuanDesilCard({
 
           {/* Step 3: Kondisi Rumah */}
           <div className="flex flex-col items-center z-10">
-            <div className="w-8 h-8 rounded-full bg-[#16a34a] text-white flex items-center justify-center shadow-sm">
+            <div className="w-8 h-8 rounded-full bg-[#16a34a] text-white flex items-center justify-center shadow-xs">
               <Check size={16} strokeWidth={3} />
             </div>
             <span className="text-[11px] md:text-xs font-medium text-gray-800 dark:text-gray-200 mt-1.5 text-center">
@@ -91,7 +91,7 @@ export function RingkasanPengajuanDesilCard({
       </div>
 
       {/* 3. Card 1: "Pengajuan" */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-300 dark:border-slate-700 p-5 md:p-6 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-300 dark:border-slate-700 p-5 md:p-6 shadow-2xs">
         <h2 className="text-sm md:text-base font-bold text-gray-900 dark:text-white mb-3">
           Pengajuan
         </h2>
@@ -114,17 +114,24 @@ export function RingkasanPengajuanDesilCard({
               {desilSaatIni}
             </span>
           </div>
-          <div className="flex justify-between items-start gap-3">
+          <div className="flex justify-between items-start">
             <span className="text-gray-800 dark:text-gray-300">Alasan Pengajuan</span>
-            <div className="font-semibold text-gray-900 dark:text-white text-right leading-tight max-w-[240px]">
-              {alasanPengajuan}
+            <div className="font-semibold text-gray-900 dark:text-white text-right leading-tight max-w-[200px]">
+              {alasanPengajuan === "Kondisi ekonomi menurun" ? (
+                <>
+                  <div>Kondisi ekonomi</div>
+                  <div>menurun</div>
+                </>
+              ) : (
+                <div>{alasanPengajuan}</div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       {/* 4. Card 2: "DATA KELUARGA" */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-300 dark:border-slate-700 p-5 md:p-6 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-300 dark:border-slate-700 p-5 md:p-6 shadow-2xs">
         <h2 className="text-sm md:text-base font-bold text-gray-900 dark:text-white mb-3 tracking-wide">
           DATA KELUARGA
         </h2>
@@ -151,7 +158,7 @@ export function RingkasanPengajuanDesilCard({
       </div>
 
       {/* 5. Card 3: "KONDISI RUMAH" */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-300 dark:border-slate-700 p-5 md:p-6 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-300 dark:border-slate-700 p-5 md:p-6 shadow-2xs">
         <h2 className="text-sm md:text-base font-bold text-gray-900 dark:text-white mb-4 tracking-wide">
           KONDISI RUMAH
         </h2>
@@ -174,7 +181,7 @@ export function RingkasanPengajuanDesilCard({
             )}
 
             {/* Floating Top-Right Pill Badge: [ 📍 Lokasi Terdeteksi ] */}
-            <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm text-[#1e40af] px-3 py-1 rounded-full shadow-md flex items-center gap-1.5 border border-blue-100">
+            <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-xs text-[#1e40af] px-3 py-1 rounded-full shadow-md flex items-center gap-1.5 border border-blue-100">
               <MapPin size={13} className="text-[#2563eb]" />
               <span className="text-[11px] md:text-xs font-semibold">Lokasi Terdeteksi</span>
             </div>
@@ -184,7 +191,7 @@ export function RingkasanPengajuanDesilCard({
         {/* Two Status Badges: [Foto Live Camera] & [Lokasi] */}
         <div className="grid grid-cols-2 gap-3 max-w-[420px] mx-auto mb-5">
           {/* Badge 1: Foto Live Camera */}
-          <div className="bg-white dark:bg-slate-900/60 border border-gray-200 dark:border-slate-700 rounded-lg p-2.5 flex items-center gap-2.5 shadow-sm">
+          <div className="bg-white dark:bg-slate-900/60 border border-gray-200 dark:border-slate-700 rounded-lg p-2.5 flex items-center gap-2.5 shadow-2xs">
             <div className="w-7 h-7 rounded-md bg-black text-white flex items-center justify-center flex-shrink-0">
               <Camera size={15} />
             </div>
@@ -204,7 +211,7 @@ export function RingkasanPengajuanDesilCard({
           </div>
 
           {/* Badge 2: Lokasi */}
-          <div className="bg-white dark:bg-slate-900/60 border border-gray-200 dark:border-slate-700 rounded-lg p-2.5 flex items-center gap-2.5 shadow-sm">
+          <div className="bg-white dark:bg-slate-900/60 border border-gray-200 dark:border-slate-700 rounded-lg p-2.5 flex items-center gap-2.5 shadow-2xs">
             <div className="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center flex-shrink-0">
               <MapPin size={15} />
             </div>
@@ -247,7 +254,7 @@ export function RingkasanPengajuanDesilCard({
           <button
             type="button"
             onClick={onBack}
-            className="border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 text-xs font-semibold px-5 py-2 rounded-lg shadow-sm transition-colors cursor-pointer text-center"
+            className="border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 text-xs font-semibold px-5 py-2 rounded-lg shadow-2xs transition-colors cursor-pointer text-center"
           >
             Kembali
           </button>

@@ -12,38 +12,19 @@ export function UploadDokumenVerifikasiCard({
 }: UploadDokumenVerifikasiCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [fileError, setFileError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-
-  const acceptValidatedFile = (file: File | null) => {
-    if (!file) {
-      setSelectedFile(null);
-      setFileError(null);
-      if (onFileSelect) onFileSelect(null);
-      return;
-    }
-    if (!/^(application\/pdf|image\/(jpeg|jpg|png|webp))$/i.test(file.type)) {
-      setFileError("Format berkas harus PDF, JPG, PNG, atau WEBP.");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setFileError("Ukuran berkas melebihi batas 5MB.");
-      return;
-    }
-    setFileError(null);
-    setSelectedFile(file);
-    if (onFileSelect) onFileSelect(file);
-  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-    acceptValidatedFile(file);
+    setSelectedFile(file);
+    if (onFileSelect) {
+      onFileSelect(file);
+    }
   };
 
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedFile(null);
-    setFileError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -66,7 +47,12 @@ export function UploadDokumenVerifikasiCard({
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0] || null;
-    acceptValidatedFile(file);
+    if (file) {
+      setSelectedFile(file);
+      if (onFileSelect) {
+        onFileSelect(file);
+      }
+    }
   };
 
   return (
@@ -152,11 +138,6 @@ export function UploadDokumenVerifikasiCard({
             </button>
           </div>
         </div>
-      )}
-      {fileError && (
-        <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-400">
-          {fileError}
-        </p>
       )}
     </div>
   );

@@ -16,10 +16,6 @@ export interface Profile {
   tempat_lahir: string | null;
   tanggal_lahir: string | null;
   jenis_kelamin: string | null;
-  agama?: string | null;
-  pekerjaan?: string | null;
-  jumlah_tanggungan?: number | null;
-  penghasilan_bulanan?: number | null;
   alamat: string | null;
   rt: string | null;
   rw: string | null;
@@ -31,8 +27,6 @@ export interface Profile {
   email?: string | null;
   password_hash?: string | null;
   role: UserRole;
-  instansi?: string | null;
-  tingkat?: string | null;
   desil_saat_ini: number;
   created_at?: string;
   updated_at?: string;
@@ -63,7 +57,6 @@ export interface KtpSubmission {
   status: KtpSubmissionStatus;
   catatan_petugas: string | null;
   petugas_id: string | null;
-  completed_at?: string | null;
   created_at?: string;
   updated_at?: string;
 }

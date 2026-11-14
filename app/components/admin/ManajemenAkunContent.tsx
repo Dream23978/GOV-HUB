@@ -96,8 +96,8 @@ export function ManajemenAkunContent({ initialAccounts }: ManajemenAkunContentPr
     e.preventDefault();
     if (!passwordModalAccount) return;
 
-    if (!newPassword || newPassword.length < 8) {
-      setPasswordError("Kata sandi minimal 8 karakter.");
+    if (!newPassword || newPassword.length < 6) {
+      setPasswordError("Kata sandi minimal 6 karakter.");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -392,7 +392,7 @@ export function ManajemenAkunContent({ initialAccounts }: ManajemenAkunContentPr
                         {/* Profile & NIK */}
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0">
+                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center font-bold text-xs shadow-xs flex-shrink-0">
                               {initials}
                             </div>
                             <div>
@@ -577,7 +577,7 @@ export function ManajemenAkunContent({ initialAccounts }: ManajemenAkunContentPr
       {/* MODAL 1: DETAIL AKUN                                     */}
       {/* ======================================================== */}
       {selectedDetailAccount && (
-        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 relative">
             {/* Close Button */}
             <button
@@ -747,7 +747,7 @@ export function ManajemenAkunContent({ initialAccounts }: ManajemenAkunContentPr
       {/* MODAL 2: GANTI PASSWORD                                  */}
       {/* ======================================================== */}
       {passwordModalAccount && (
-        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full shadow-2xl p-6 relative">
             <button
               onClick={() => {
@@ -797,7 +797,7 @@ export function ManajemenAkunContent({ initialAccounts }: ManajemenAkunContentPr
                     type={showPassword ? "text" : "password"}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Minimal 8 karakter"
+                    placeholder="Minimal 6 karakter"
                     required
                     className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1b3a6b]"
                   />
@@ -862,7 +862,7 @@ export function ManajemenAkunContent({ initialAccounts }: ManajemenAkunContentPr
       {/* MODAL 3: KONFIRMASI HAPUS AKUN                           */}
       {/* ======================================================== */}
       {deleteModalAccount && (
-        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full shadow-2xl p-6 relative">
             <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center mb-4">
               <AlertTriangle size={24} />

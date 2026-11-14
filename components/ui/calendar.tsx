@@ -9,7 +9,6 @@ export interface CalendarProps {
   selected?: Date;
   onSelect?: (date: Date | undefined) => void;
   defaultMonth?: Date;
-  minDate?: Date;
   className?: string;
 }
 
@@ -19,15 +18,10 @@ const MONTHS = [
   "Juli", "Agustus", "September", "Oktober", "November", "Desember"
 ];
 
-function startOfLocalDay(d: Date): number {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-}
-
 export function Calendar({
   selected,
   onSelect,
   defaultMonth,
-  minDate,
   className,
 }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = React.useState<Date>(() => {
@@ -70,13 +64,7 @@ export function Calendar({
     );
   };
 
-  const isDayDisabled = (day: number) => {
-    if (!minDate) return false;
-    return startOfLocalDay(new Date(year, month, day)) < startOfLocalDay(minDate);
-  };
-
   const handleSelectDay = (day: number) => {
-    if (isDayDisabled(day)) return;
     const newDate = new Date(year, month, day);
     if (onSelect) {
       if (isSelected(day)) {
@@ -146,23 +134,19 @@ export function Calendar({
           const day = i + 1;
           const selectedState = isSelected(day);
           const todayState = isToday(day);
-          const disabledState = isDayDisabled(day);
 
           return (
             <button
               key={`day-${day}`}
               type="button"
-              disabled={disabledState}
               onClick={() => handleSelectDay(day)}
               className={cn(
-                "text-xs p-1.5 rounded-lg flex items-center justify-center transition-colors",
-                disabledState
-                  ? "text-gray-300 dark:text-gray-600 cursor-not-allowed"
-                  : selectedState
-                  ? "bg-blue-600 text-white font-bold shadow-sm cursor-pointer"
+                "text-xs p-1.5 rounded-lg flex items-center justify-center transition-colors cursor-pointer",
+                selectedState
+                  ? "bg-blue-600 text-white font-bold shadow-sm"
                   : todayState
-                  ? "border border-blue-500 font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 cursor-pointer"
-                  : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer"
+                  ? "border border-blue-500 font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700"
+                  : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
               )}
             >
               {day}

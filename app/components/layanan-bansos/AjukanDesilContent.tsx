@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { broadcastSync } from "@/app/components/AutoRefresh";
-import { uploadPrivateDocument } from "@/lib/upload-document";
 import { ChevronLeft, Check, AlertCircle } from "lucide-react";
 import { AjukanDesilIdentitasCard } from "./AjukanDesilIdentitasCard";
 import { AjukanDesilKeluargaCard } from "./AjukanDesilKeluargaCard";
@@ -63,25 +62,15 @@ export function AjukanDesilContent({
   });
 
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [alasanPengajuan, setAlasanPengajuan] = useState("Kondisi ekonomi menurun");
-  const [pengeluaranInput, setPengeluaranInput] = useState("");
 
   // Step 3 Live Camera Photo Data
   const [housePhoto, setHousePhoto] = useState<string | null>(null);
-  const [housePhotoPath, setHousePhotoPath] = useState<string | null>(null);
   const [photoValidationWarning, setPhotoValidationWarning] = useState<string | null>(null);
-  const autoStepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Modal & submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (autoStepTimerRef.current) clearTimeout(autoStepTimerRef.current);
-    };
-  }, []);
 
   const scrollToTop = () => {
     if (typeof window !== "undefined") {
@@ -100,56 +89,32 @@ export function AjukanDesilContent({
   };
 
   const handleLanjutkanStep3 = () => {
-    if (!housePhoto || !housePhotoPath) {
-      setPhotoValidationWarning(
-        "Foto kondisi rumah wajib diambil langsung melalui kamera perangkat sebelum melanjutkan."
-      );
-      return;
-    }
     setPhotoValidationWarning(null);
     setStep(4);
     scrollToTop();
   };
 
   const handleKirimPengajuan = async () => {
-    if (!housePhotoPath) {
-      setSubmitError("Foto verifikasi kondisi rumah wajib diunggah terlebih dahulu.");
-      return;
-    }
     setIsSubmitting(true);
     setSubmitError(null);
     try {
       const nomorTiket = `DSL-${Date.now().toString().slice(-8)}`;
       const parsedPendapatan = parseInt(ekonomiData.pendapatan.replace(/\D/g, "")) || 0;
-      const parsedPengeluaran =
-        parseInt(pengeluaranInput.replace(/\D/g, "")) || parsedPendapatan;
-      const parsedTanggungan =
-        parseInt(keluargaData.anggotaKeluarga.replace(/\D/g, "")) || initialTanggungan || 0;
+      const parsedTanggungan = parseInt(keluargaData.anggotaKeluarga.replace(/\D/g, "")) || initialTanggungan || 0;
       const targetDesil = initialDesil > 0 ? Math.max(1, initialDesil - 2) : 1;
-
-      let buktiSlipGajiPath: string | undefined;
-      if (uploadedFile) {
-        const docUpload = await uploadPrivateDocument(uploadedFile, "bansos");
-        if (!docUpload.success || !docUpload.path) {
-          setSubmitError(docUpload.error || "Gagal mengunggah dokumen pendukung.");
-          return;
-        }
-        buktiSlipGajiPath = docUpload.path;
-      }
 
       // Simpan ke database Supabase
       const { submitDesilAction } = await import("@/app/actions/bansos");
       const res = await submitDesilAction({
         nomorTiket,
+        desilLama: initialDesil,
         desilDiajukan: targetDesil,
         jumlahTanggungan: parsedTanggungan,
-        pekerjaanKepalaKeluarga:
-          ekonomiData.statusPekerja || pekerjaanData.statusPekerjaan,
+        pekerjaanKepalaKeluarga: pekerjaanData.statusPekerjaan,
         penghasilanBulanan: parsedPendapatan,
-        pengeluaranBulanan: parsedPengeluaran,
-        alasan: alasanPengajuan,
-        fotoRumahDepanUrl: housePhotoPath,
-        buktiSlipGajiUrl: buktiSlipGajiPath,
+        pengeluaranBulanan: Math.round(parsedPendapatan * 0.9),
+        alasan: "Kondisi ekonomi menurun",
+        fotoRumahDepanUrl: housePhoto || undefined,
       });
 
       if (!res?.success) {
@@ -251,7 +216,7 @@ export function AjukanDesilContent({
           <div className="flex items-center justify-end gap-3.5">
             <Link
               href="/dashboard/layanan-bansos"
-              className="border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 text-xs md:text-sm font-semibold px-6 py-2.5 rounded-xl shadow-sm transition-colors cursor-pointer select-none text-center"
+              className="border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 text-xs md:text-sm font-semibold px-6 py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer select-none text-center"
             >
               Kembali
             </Link>
@@ -275,39 +240,6 @@ export function AjukanDesilContent({
             onChange={(val) => setEkonomiData(val)}
           />
 
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm p-5 mb-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="alasan-peninjauan-select" className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                Alasan Peninjauan Desil
-              </label>
-              <select
-                id="alasan-peninjauan-select"
-                value={alasanPengajuan}
-                onChange={(e) => setAlasanPengajuan(e.target.value)}
-                className="w-full text-xs rounded-xl border border-gray-300 dark:border-slate-600 bg-gray-50/50 dark:bg-slate-900 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
-              >
-                <option value="Kondisi ekonomi menurun">Kondisi ekonomi menurun</option>
-                <option value="Kehilangan pekerjaan / PHK">Kehilangan pekerjaan / PHK</option>
-                <option value="Bertambahnya tanggungan keluarga">Bertambahnya tanggungan keluarga</option>
-                <option value="Anggota keluarga sakit menahun">Anggota keluarga sakit menahun</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor="estimasi-pengeluaran-input" className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                Estimasi Pengeluaran Bulanan (Opsional)
-              </label>
-              <input
-                id="estimasi-pengeluaran-input"
-                type="text"
-                inputMode="numeric"
-                value={pengeluaranInput}
-                onChange={(e) => setPengeluaranInput(e.target.value)}
-                placeholder="Contoh: 1500000"
-                className="w-full text-xs rounded-xl border border-gray-300 dark:border-slate-600 bg-gray-50/50 dark:bg-slate-900 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
-              />
-            </div>
-          </div>
-
           <UploadDokumenVerifikasiCard
             onFileSelect={(file) => setUploadedFile(file)}
           />
@@ -319,7 +251,7 @@ export function AjukanDesilContent({
                 setStep(1);
                 scrollToTop();
               }}
-              className="border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 text-xs md:text-sm font-semibold px-6 py-2.5 rounded-xl shadow-sm transition-colors cursor-pointer select-none text-center"
+              className="border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 text-xs md:text-sm font-semibold px-6 py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer select-none text-center"
             >
               Kembali
             </button>
@@ -340,13 +272,12 @@ export function AjukanDesilContent({
         <div className="flex flex-col w-full animate-in fade-in duration-200">
           <VerifikasiKondisiRumahCard
             photo={housePhoto}
-            onPhotoCaptured={(previewUrl, storagePath) => {
-              setHousePhoto(previewUrl);
-              setHousePhotoPath(storagePath || null);
-              if (previewUrl && storagePath) {
+            onPhotoCaptured={(dataUrl) => {
+              setHousePhoto(dataUrl);
+              if (dataUrl) {
                 setPhotoValidationWarning(null);
-                if (autoStepTimerRef.current) clearTimeout(autoStepTimerRef.current);
-                autoStepTimerRef.current = setTimeout(() => {
+                // Langsung masuk ke halaman ringkasan verifikasi setelah user ambil foto
+                setTimeout(() => {
                   setStep(4);
                   scrollToTop();
                 }, 500);
@@ -368,7 +299,7 @@ export function AjukanDesilContent({
                 setStep(2);
                 scrollToTop();
               }}
-              className="border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 text-xs md:text-sm font-semibold px-6 py-2.5 rounded-xl shadow-sm transition-colors cursor-pointer select-none text-center"
+              className="border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 text-xs md:text-sm font-semibold px-6 py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer select-none text-center"
             >
               Kembali
             </button>
@@ -398,7 +329,7 @@ export function AjukanDesilContent({
             nik={initialNik}
             desilSaatIni={initialDesil > 0 ? `Desil ${initialDesil}` : "-"}
             desilSementara={initialDesil > 0 ? `Desil ${Math.max(1, initialDesil - 2)}` : "-"}
-            alasanPengajuan={alasanPengajuan}
+            alasanPengajuan="Kondisi ekonomi menurun"
             statusPekerjaan={ekonomiData.statusPekerja || pekerjaanData.statusPekerjaan || "-"}
             pendapatan={ekonomiData.pendapatan || "-"}
             anggotaKeluarga={ekonomiData.jumlahAnggotaKeluarga || keluargaData.anggotaKeluarga || "-"}
@@ -416,18 +347,13 @@ export function AjukanDesilContent({
 
       {/* Final Success Notification Modal */}
       {isSuccess && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="desil-success-title"
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-        >
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-md shadow-2xl border border-gray-200 dark:border-slate-700 p-6 md:p-7 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex flex-col items-center text-center">
               <div className="w-14 h-14 rounded-full bg-[#16a34a] text-white flex items-center justify-center mb-4 shadow-lg">
                 <Check size={28} strokeWidth={3} />
               </div>
-              <h3 id="desil-success-title" className="font-bold text-lg text-gray-900 dark:text-white mb-2">
+              <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2">
                 Permohonan Berhasil Dikirim!
               </h3>
               <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300 leading-relaxed max-w-sm mb-4">
@@ -451,7 +377,7 @@ export function AjukanDesilContent({
                 <button
                   type="button"
                   onClick={() => router.push("/dashboard/layanan-bansos/tracking")}
-                  className="w-full bg-[#0B57D0] hover:bg-blue-700 active:scale-[0.98] text-white font-semibold text-xs md:text-sm py-2.5 px-4 rounded-xl shadow-sm transition-all text-center cursor-pointer"
+                  className="w-full bg-[#0B57D0] hover:bg-blue-700 active:scale-98 text-white font-semibold text-xs md:text-sm py-2.5 px-4 rounded-xl shadow-xs transition-all text-center cursor-pointer"
                 >
                   Lihat Status Pengajuan
                 </button>

@@ -1,10 +1,7 @@
 import React from "react";
 import { AdminDashboardLayout } from "@/app/components/admin/AdminDashboardLayout";
 import { AdminDukcapilDashboardContent } from "@/app/components/admin/AdminDukcapilDashboardContent";
-import {
-  getAdminKtpSubmissions,
-  requireAdminPageSession,
-} from "@/lib/services/admin.service";
+import { getAdminKtpSubmissions } from "@/lib/services/admin.service";
 
 export const metadata = {
   title: "Dashboard Pelayanan KTP - Dukcapil Kecamatan | GOV-HUB",
@@ -12,7 +9,6 @@ export const metadata = {
 };
 
 export default async function DukcapilKecamatanDashboardPage() {
-  const session = await requireAdminPageSession("dukcapil", "kecamatan");
   const result = await getAdminKtpSubmissions();
 
   return (
@@ -20,13 +16,12 @@ export default async function DukcapilKecamatanDashboardPage() {
       instansi="dukcapil"
       instansiName="Dinas Dukcapil"
       roleTitle="Admin Kecamatan"
-      adminName={session.nama}
-      wilayahLabel={session.wilayahLabel}
+      adminName="Operator KTP Genteng"
       basePath="/admin/dukcapil/kecamatan/dashboard"
     >
       <AdminDukcapilDashboardContent
         roleTitle="Admin Kecamatan (Dukcapil)"
-        wilayah={session.wilayahLabel}
+        wilayah="Kecamatan Genteng, Surabaya"
         initialSubmissions={result.data}
         initialCounts={result.counts}
         initialBiometricCount={result.biometricCount}
@@ -36,3 +31,4 @@ export default async function DukcapilKecamatanDashboardPage() {
     </AdminDashboardLayout>
   );
 }
+

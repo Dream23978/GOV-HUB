@@ -3,7 +3,6 @@ import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { maskNik } from "@/lib/format";
 
 async function getProfileData() {
   const supabase = await createClient();
@@ -44,7 +43,13 @@ export async function DashboardContent() {
     user.user_metadata?.nik ||
     "";
 
-  const maskedNik = nik ? `NIK: ${maskNik(nik)}` : "NIK: Terverifikasi";
+  // Masking NIK: NIK: 3578**********002
+  const maskedNik =
+    nik.length >= 16
+      ? `NIK: ${nik.substring(0, 4)}********${nik.substring(nik.length - 4)}`
+      : nik
+      ? `NIK: ${nik}`
+      : "NIK: Terverifikasi";
 
   // Kapitalisasi nama
   const displayNama = rawNama

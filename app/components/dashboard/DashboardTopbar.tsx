@@ -52,29 +52,28 @@ export async function DashboardTopbar() {
         src="/navbar.png" 
         alt="Navbar Background" 
         fill
-        sizes="100vw"
         priority
         className="object-cover -z-10"
       />
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Image
             src="/garuda (2).png"
             alt="Garuda Indonesia"
-            width={40}
-            height={40}
-            className="w-8 h-8 sm:w-10 sm:h-10 object-contain flex-shrink-0"
+            width={50}
+            height={50}
+            className="object-contain"
           />
-          <div className="w-px h-6 sm:h-7 bg-gray-300 dark:bg-slate-600 flex-shrink-0" />
-          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <div className="w-px h-7 bg-gray-300 dark:bg-slate-600" />
+          <div className="flex items-center gap-2">
             <Image
               src="/logo.png"
               alt="Gov-Hub"
-              width={56}
-              height={56}
-              className="w-10 h-10 sm:w-14 sm:h-14 object-contain flex-shrink-0"
+              width={80}
+              height={80}
+              className="object-contain"
             />
-            <span className="text-gray-800 dark:text-white font-bold text-base sm:text-2xl truncate">
+            <span className="text-gray-800 dark:text-white font-bold text-lg sm:text-2xl">
               GOV-<span className="text-blue-600">HUB</span>
             </span>
           </div>

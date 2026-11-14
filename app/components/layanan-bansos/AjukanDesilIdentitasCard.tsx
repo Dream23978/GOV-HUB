@@ -13,7 +13,7 @@ export function AjukanDesilIdentitasCard({
   nama = "Warga Terdaftar",
   nik = "••••••••••••••••",
   jumlahKeluarga = "-",
-  alamat = "-",
+  alamat = "Kota Surabaya",
 }: AjukanDesilIdentitasCardProps) {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-300/80 dark:border-slate-700 shadow-sm p-5 md:p-6 mb-4">

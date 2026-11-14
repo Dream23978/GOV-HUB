@@ -71,7 +71,7 @@ export function HeroSection() {
       </div>
 
       {/* ── Main content ── */}
-      <div className="relative z-10 flex flex-col flex-1 px-5 pt-8 pb-32 sm:px-8 sm:pt-10 md:px-14 md:pt-12 lg:px-20 lg:pt-14">
+      <div className="relative z-10 flex flex-col flex-1 px-8 pt-10 pb-32 md:px-14 md:pt-12 lg:px-20 lg:pt-14">
         {/* Logo */}
         <ScrollAnimate direction="down" duration={0.5}>
           <GovHubLogo />
@@ -80,17 +80,17 @@ export function HeroSection() {
         {/* Headline + form */}
         <div className="mt-10 md:mt-14 lg:mt-16 max-w-lg">
           <ScrollAnimate direction="up" duration={0.6} delay={0.1}>
-            <h1 className="text-[2.15rem] sm:text-[2.4rem] md:text-[3rem] lg:text-[3.4rem] font-black text-gray-900 leading-[1.15] tracking-tight">
+            <h1 className="text-[2.4rem] md:text-[3rem] lg:text-[3.4rem] font-black text-gray-900 leading-[1.15] tracking-tight">
               Lebih Mudah,
               <br />
               Lebih Cepat,{" "}
-              <span className="text-blue-600">Lebih Terpadu</span>
+              <span className="text-blue-600">Lebih Cepat</span>
             </h1>
           </ScrollAnimate>
 
           <ScrollAnimate direction="up" duration={0.6} delay={0.2}>
             <p className="mt-4 text-[0.95rem] md:text-base text-gray-700 font-medium">
-              GOV-HUB menghubungkan layanan Pemerintah.
+              GOV-HUB menghubungkan layanan Pemeritah.
             </p>
           </ScrollAnimate>
 

@@ -72,16 +72,13 @@ export function TrackingKtpContent({
           nama={citizenProfile.nama}
           maskedNik={citizenProfile.maskedNik}
           nomorPengajuan={trackingData.nomorPengajuan}
-          jenisLayanan={trackingData.jenisLayanan || "Pembuatan KTP-el"}
+          jenisLayanan="Pembuatan KTP-el"
           tanggalPengajuan={trackingData.tanggalPengajuan}
           lokasiLayanan="Kecamatan setempat"
         />
 
         {/* Vertical Timeline Status Proses */}
-        <TrackingTimelineCard
-          statusRaw={trackingData.statusRaw}
-          catatanPetugas={trackingData.catatanPetugas}
-        />
+        <TrackingTimelineCard statusRaw={trackingData.statusRaw} />
 
         {/* Pickup & Completion Banner with Action Buttons */}
         <TrackingPickupCard
@@ -90,7 +87,6 @@ export function TrackingKtpContent({
           catatan="Bawa diri Anda; tidak perlu membawa fotokopi berkas."
           nomorPengajuan={trackingData.nomorPengajuan !== "-" ? trackingData.nomorPengajuan : undefined}
           statusRaw={trackingData.statusRaw}
-          catatanPetugas={trackingData.catatanPetugas}
         />
       </div>
     </div>

@@ -17,7 +17,6 @@ import { cn } from "@/lib/utils";
 interface DatePickerSimpleProps {
   date?: Date;
   onDateChange?: (date: Date | undefined) => void;
-  minDate?: Date;
   label?: string;
   id?: string;
   className?: string;
@@ -26,7 +25,6 @@ interface DatePickerSimpleProps {
 export function DatePickerSimple({
   date: externalDate,
   onDateChange,
-  minDate,
   label = "Pilih Tanggal",
   id = "date-picker-simple",
   className,
@@ -55,7 +53,7 @@ export function DatePickerSimple({
             <Button
               variant="outline"
               id={id}
-              className="w-full justify-start font-normal h-auto py-2.5 px-3 rounded-xl border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-xs md:text-[13px] shadow-sm hover:border-blue-400 transition-colors gap-2.5 cursor-pointer"
+              className="w-full justify-start font-normal h-auto py-2.5 px-3 rounded-xl border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-750 text-xs md:text-[13px] shadow-sm hover:border-blue-400 transition-colors gap-2.5 cursor-pointer"
             >
               <CalendarIcon size={17} className="text-gray-800 dark:text-gray-200 flex-shrink-0" />
               {date ? (
@@ -73,8 +71,7 @@ export function DatePickerSimple({
             mode="single"
             selected={date}
             onSelect={handleSelect}
-            defaultMonth={date || minDate}
-            minDate={minDate}
+            defaultMonth={date}
           />
         </PopoverContent>
       </Popover>

@@ -7,8 +7,6 @@ export interface TrackingData {
   tanggalPengajuan: string;
   statusBadge: string;
   statusRaw?: string;
-  jenisLayanan?: string;
-  catatanPetugas?: string | null;
 }
 
 interface TrackingKtpCardProps {
@@ -29,25 +27,13 @@ export function TrackingKtpCard({
   const tanggalPengajuan = data?.tanggalPengajuan || "-";
   const statusBadge = data?.statusBadge || "Belum Ada";
 
-  const normStatus = (data?.statusRaw || statusBadge).toLowerCase();
-  const isConfirmed = normStatus === "terkonfirmasi" || normStatus === "selesai";
-  const isRejected = normStatus === "ditolak";
+  const isConfirmed =
+    statusBadge.toLowerCase() === "terkonfirmasi" ||
+    statusBadge.toLowerCase() === "selesai";
 
   return (
     <div
-      role={onToggle ? "button" : undefined}
-      tabIndex={onToggle ? 0 : undefined}
       onClick={onToggle}
-      onKeyDown={
-        onToggle
-          ? (e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onToggle();
-              }
-            }
-          : undefined
-      }
       className={`bg-white dark:bg-slate-800 rounded-2xl border border-gray-300/80 dark:border-slate-700 shadow-sm p-5 md:p-6 w-full transition-all group ${
         onToggle ? "cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md" : ""
       } ${className}`}
@@ -119,11 +105,9 @@ export function TrackingKtpCard({
         {/* Right: Status Pill Badge & Chevron */}
         <div className="flex items-center gap-2.5">
           <div
-            className={`font-semibold text-xs md:text-[13px] px-4 py-1.5 rounded-full select-none shadow-sm ${
+            className={`font-semibold text-xs md:text-[13px] px-4 py-1.5 rounded-full select-none shadow-xs ${
               isConfirmed
                 ? "bg-[#E8F8EE] dark:bg-green-950/60 text-[#16A34A] dark:text-green-400"
-                : isRejected
-                ? "bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400"
                 : "bg-[#FDEEDB] dark:bg-amber-950/60 text-[#D97706] dark:text-amber-400"
             }`}
           >

@@ -1,10 +1,7 @@
 import React from "react";
 import { AdminDashboardLayout } from "@/app/components/admin/AdminDashboardLayout";
 import { AdminDukcapilDashboardContent } from "@/app/components/admin/AdminDukcapilDashboardContent";
-import {
-  getAdminKtpSubmissions,
-  requireAdminPageSession,
-} from "@/lib/services/admin.service";
+import { getAdminKtpSubmissions } from "@/lib/services/admin.service";
 
 export const metadata = {
   title: "Dashboard Pelayanan KTP - Disdukcapil Kota | GOV-HUB",
@@ -12,7 +9,6 @@ export const metadata = {
 };
 
 export default async function DukcapilKotaDashboardPage() {
-  const session = await requireAdminPageSession("dukcapil", "kota");
   const result = await getAdminKtpSubmissions();
 
   return (
@@ -20,13 +16,12 @@ export default async function DukcapilKotaDashboardPage() {
       instansi="dukcapil"
       instansiName="Dinas Dukcapil"
       roleTitle="Disdukcapil Kota"
-      adminName={session.nama}
-      wilayahLabel={session.wilayahLabel}
+      adminName="Operator Dukcapil Surabaya"
       basePath="/admin/dukcapil/kota/dashboard"
     >
       <AdminDukcapilDashboardContent
         roleTitle="Disdukcapil Kota"
-        wilayah={session.wilayahLabel}
+        wilayah="Kota Surabaya"
         initialSubmissions={result.data}
         initialCounts={result.counts}
         initialBiometricCount={result.biometricCount}
@@ -34,3 +29,4 @@ export default async function DukcapilKotaDashboardPage() {
     </AdminDashboardLayout>
   );
 }
+

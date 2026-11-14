@@ -1,6 +1,5 @@
 import { ProfilContent } from "@/app/components/profil/ProfilContent";
 import { createClient } from "@/lib/supabase/server";
-import { maskNik } from "@/lib/format";
 
 export const metadata = {
   title: "Profil Saya | GOV-HUB",
@@ -34,28 +33,11 @@ export default async function ProfilPage() {
   const profile = profileData?.profile;
   const user = profileData?.user;
 
-  let initialAvatarUrl = "";
-  const rawAvatarPath = user?.user_metadata?.avatar_url;
-  if (typeof rawAvatarPath === "string" && rawAvatarPath.trim()) {
-    if (rawAvatarPath.startsWith("https://")) {
-      initialAvatarUrl = rawAvatarPath;
-    } else {
-      try {
-        const supabase = await createClient();
-        const { data: signed } = await supabase.storage
-          .from("govhub-documents")
-          .createSignedUrl(rawAvatarPath, 3600);
-        if (signed?.signedUrl) {
-          initialAvatarUrl = signed.signedUrl;
-        }
-      } catch {
-        // Fallback ke inisial bila gagal sign URL
-      }
-    }
-  }
-
   const rawNik = profile?.nik || user?.user_metadata?.nik || "";
-  const maskedNik = rawNik ? maskNik(rawNik) : "-";
+  const maskedNik =
+    rawNik.length >= 6
+      ? `${rawNik.slice(0, 3)}*********${rawNik.slice(-3)}`
+      : rawNik || "-";
 
   const fallbackNama =
     profile?.nama_lengkap ||
@@ -68,7 +50,6 @@ export default async function ProfilPage() {
         day: "numeric",
         month: "long",
         year: "numeric",
-        timeZone: "Asia/Jakarta",
       })
     : "";
 
@@ -81,34 +62,21 @@ export default async function ProfilPage() {
         day: "numeric",
         month: "long",
         year: "numeric",
-        timeZone: "Asia/Jakarta",
-      })}, ${d.toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: "Asia/Jakarta",
-      })}`;
+      })}, ${d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}`;
     }
     return d.toLocaleDateString("id-ID", {
       day: "numeric",
       month: "long",
       year: "numeric",
-      timeZone: "Asia/Jakarta",
     });
   };
-
-  const normalizedGender =
-    profile?.jenis_kelamin && /laki/i.test(profile.jenis_kelamin)
-      ? "Laki-laki"
-      : profile?.jenis_kelamin && /perempuan/i.test(profile.jenis_kelamin)
-      ? "Perempuan"
-      : profile?.jenis_kelamin || "-";
 
   const initialData = {
     namaLengkap: fallbackNama,
     nik: maskedNik,
     tempatTanggalLahir:
       [profile?.tempat_lahir, formattedTglLahir].filter(Boolean).join(", ") || "-",
-    jenisKelamin: normalizedGender,
+    jenisKelamin: profile?.jenis_kelamin || "-",
     alamat: profile?.alamat || "-",
     noTelepon:
       profile?.nomor_telepon ||
@@ -120,9 +88,6 @@ export default async function ProfilPage() {
   return (
     <ProfilContent
       initialData={initialData}
-      initialAvatarUrl={initialAvatarUrl}
-      initialTempatLahir={profile?.tempat_lahir || ""}
-      initialTanggalLahirIso={profile?.tanggal_lahir ? String(profile.tanggal_lahir).slice(0, 10) : ""}
       initialTerdaftarSejak={formatAccountDate(profile?.created_at || user?.created_at)}
       initialTerakhirLogin={formatAccountDate(user?.last_sign_in_at, true)}
     />

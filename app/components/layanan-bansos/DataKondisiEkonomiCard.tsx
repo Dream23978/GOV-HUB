@@ -71,7 +71,7 @@ export function DataKondisiEkonomiCard({
             value={values.statusPekerja}
             readOnly={!isEditing}
             onChange={(e) => handleFieldChange("statusPekerja", e.target.value)}
-            className={`w-full sm:max-w-xs md:max-w-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3.5 py-1.5 text-xs text-gray-900 dark:text-gray-100 shadow-sm focus:outline-none ${
+            className={`w-full sm:max-w-xs md:max-w-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3.5 py-1.5 text-xs text-gray-900 dark:text-gray-100 shadow-2xs focus:outline-none ${
               isEditing ? "focus:border-blue-500 ring-1 ring-blue-500/20" : ""
             }`}
           />
@@ -87,7 +87,7 @@ export function DataKondisiEkonomiCard({
             value={values.pendapatan}
             readOnly={!isEditing}
             onChange={(e) => handleFieldChange("pendapatan", e.target.value)}
-            className={`w-full sm:max-w-xs md:max-w-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3.5 py-1.5 text-xs text-gray-900 dark:text-gray-100 shadow-sm focus:outline-none ${
+            className={`w-full sm:max-w-xs md:max-w-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3.5 py-1.5 text-xs text-gray-900 dark:text-gray-100 shadow-2xs focus:outline-none ${
               isEditing ? "focus:border-blue-500 ring-1 ring-blue-500/20" : ""
             }`}
           />
@@ -103,7 +103,7 @@ export function DataKondisiEkonomiCard({
             value={values.jumlahAnggotaKeluarga}
             readOnly={!isEditing}
             onChange={(e) => handleFieldChange("jumlahAnggotaKeluarga", e.target.value)}
-            className={`w-full sm:max-w-xs md:max-w-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3.5 py-1.5 text-xs text-gray-900 dark:text-gray-100 shadow-sm focus:outline-none ${
+            className={`w-full sm:max-w-xs md:max-w-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3.5 py-1.5 text-xs text-gray-900 dark:text-gray-100 shadow-2xs focus:outline-none ${
               isEditing ? "focus:border-blue-500 ring-1 ring-blue-500/20" : ""
             }`}
           />
@@ -119,23 +119,23 @@ export function DataKondisiEkonomiCard({
             value={values.orangTua}
             readOnly={!isEditing}
             onChange={(e) => handleFieldChange("orangTua", e.target.value)}
-            className={`w-full sm:max-w-xs md:max-w-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3.5 py-1.5 text-xs text-gray-900 dark:text-gray-100 shadow-sm focus:outline-none ${
+            className={`w-full sm:max-w-xs md:max-w-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3.5 py-1.5 text-xs text-gray-900 dark:text-gray-100 shadow-2xs focus:outline-none ${
               isEditing ? "focus:border-blue-500 ring-1 ring-blue-500/20" : ""
             }`}
           />
         </div>
 
-        {/* Aset Kendaraan */}
+        {/* Aset Kendaran */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4">
           <label className="text-xs font-semibold text-gray-800 dark:text-gray-200 sm:w-48 flex-shrink-0">
-            Aset Kendaraan
+            Aset Kendaran
           </label>
           <input
             type="text"
             value={values.asetKendaraan}
             readOnly={!isEditing}
             onChange={(e) => handleFieldChange("asetKendaraan", e.target.value)}
-            className={`w-full sm:max-w-xs md:max-w-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3.5 py-1.5 text-xs text-gray-900 dark:text-gray-100 shadow-sm focus:outline-none ${
+            className={`w-full sm:max-w-xs md:max-w-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3.5 py-1.5 text-xs text-gray-900 dark:text-gray-100 shadow-2xs focus:outline-none ${
               isEditing ? "focus:border-blue-500 ring-1 ring-blue-500/20" : ""
             }`}
           />
@@ -151,7 +151,7 @@ export function DataKondisiEkonomiCard({
             value={values.sumberData}
             readOnly={!isEditing}
             onChange={(e) => handleFieldChange("sumberData", e.target.value)}
-            className={`w-full sm:max-w-xs md:max-w-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3.5 py-1.5 text-xs text-gray-900 dark:text-gray-100 shadow-sm focus:outline-none ${
+            className={`w-full sm:max-w-xs md:max-w-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3.5 py-1.5 text-xs text-gray-900 dark:text-gray-100 shadow-2xs focus:outline-none ${
               isEditing ? "focus:border-blue-500 ring-1 ring-blue-500/20" : ""
             }`}
           />
@@ -164,7 +164,7 @@ export function DataKondisiEkonomiCard({
         <button
           type="button"
           onClick={handleSesuai}
-          className={`border rounded-lg text-xs font-medium px-6 py-1.5 shadow-sm transition-all cursor-pointer ${
+          className={`border rounded-lg text-xs font-medium px-6 py-1.5 shadow-2xs transition-all cursor-pointer ${
             isConfirmed && !isEditing
               ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-400 font-semibold"
               : "bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700"
@@ -173,17 +173,17 @@ export function DataKondisiEkonomiCard({
           Sesuai
         </button>
 
-        {/* Edit Button */}
+        {/* edit Button */}
         <button
           type="button"
           onClick={handleEditToggle}
-          className={`border rounded-lg text-xs font-medium px-6 py-1.5 shadow-sm transition-all cursor-pointer ${
+          className={`border rounded-lg text-xs font-medium px-6 py-1.5 shadow-2xs transition-all cursor-pointer ${
             isEditing
               ? "bg-blue-50 dark:bg-blue-950/40 text-[#0B57D0] dark:text-blue-400 border-blue-400 font-semibold"
               : "bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700"
           }`}
         >
-          {isEditing ? "Simpan" : "Edit"}
+          {isEditing ? "Simpan" : "edit"}
         </button>
       </div>
     </div>

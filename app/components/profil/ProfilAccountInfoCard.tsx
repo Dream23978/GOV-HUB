@@ -15,7 +15,7 @@ export function ProfilAccountInfoCard({
   terakhirLogin = "-",
 }: ProfilAccountInfoCardProps) {
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200/90 dark:border-slate-700/80 shadow-sm p-5 flex flex-col gap-3.5">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200/90 dark:border-slate-700/80 shadow-xs p-5 flex flex-col gap-3.5">
       <h3 className="text-xs font-bold text-gray-900 dark:text-white">
         Informasi Akun
       </h3>

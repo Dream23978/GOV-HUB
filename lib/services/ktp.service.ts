@@ -1,34 +1,76 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { parseScheduleToIso, sanitizeDocumentUrl } from "@/lib/validators";
 import { KtpSubmission } from "@/types/database";
 
-export { parseScheduleToIso, sanitizeDocumentUrl };
-
 export interface CreateKtpSubmissionParams {
-  nomorTiket?: string;
+  nomorTiket: string;
   jenisPengajuan?: string;
-  scheduleId?: string;
   dokumenKkUrl?: string;
   dokumenAktaUrl?: string;
   suratKehilanganUrl?: string;
   waktuKehadiranBiometrik?: string;
   profileUpdates?: {
     nama_lengkap?: string;
+    nik?: string;
     alamat?: string;
     jenis_kelamin?: string;
   };
 }
 
 /**
- * Service untuk membuat pengajuan KTP baru (termasuk atomic slot booking jika memakai scheduleId)
+ * Helper untuk mem-parsing string jadwal UI menjadi ISO timestamp PostgreSQL yang valid
+ */
+function parseScheduleToIso(waktuStr?: string): string | null {
+  if (!waktuStr || !waktuStr.trim()) return null;
+  const raw = waktuStr.trim();
+
+  const directDate = new Date(raw);
+  if (!isNaN(directDate.getTime())) {
+    return directDate.toISOString();
+  }
+
+  try {
+    const cleaned = raw
+      .replace(/(\d+)(st|nd|rd|th)/i, "$1")
+      .replace(/\s*WIB/i, "")
+      .trim();
+
+    const match = cleaned.match(/^(.*?)\s+(\d{1,2}:\d{2})\s*(?:-\s*\d{1,2}:\d{2})?$/);
+    if (match) {
+      const datePart = match[1];
+      const timePart = match[2];
+      const combined = new Date(`${datePart} ${timePart} +07:00`);
+      if (!isNaN(combined.getTime())) {
+        return combined.toISOString();
+      }
+    }
+  } catch {
+    // fallback null
+  }
+
+  return null;
+}
+
+function sanitizeOptionalUrl(url?: string): string | null {
+  if (!url || typeof url !== "string" || !url.trim()) return null;
+  const trimmed = url.trim().slice(0, 1024);
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === "https:" || parsed.protocol === "http:") {
+      return parsed.toString();
+    }
+  } catch {
+    // Tolak skema berbahaya seperti javascript: atau data:
+  }
+  return null;
+}
+
+/**
+ * Service untuk membuat pengajuan KTP baru
  */
 export async function createKtpSubmission(
   params: CreateKtpSubmissionParams
 ): Promise<{ success: boolean; data?: KtpSubmission; error?: string }> {
-  let bookedScheduleId: string | null = null;
-  const adminClient = createAdminClient();
-
   try {
     const supabase = await createClient();
     const {
@@ -40,106 +82,96 @@ export async function createKtpSubmission(
       return { success: false, error: "Sesi login tidak valid. Silakan login kembali." };
     }
 
-    let validIsoTime = parseScheduleToIso(params.waktuKehadiranBiometrik);
-
-    // Atomic slot booking when referencing a biometric_schedules row
-    if (params.scheduleId) {
-      if (!adminClient) {
-        return { success: false, error: "Layanan penjadwalan server tidak tersedia." };
-      }
-      const { data: bookedRows, error: bookErr } = await adminClient.rpc(
-        "book_biometric_schedule",
-        { p_schedule_id: params.scheduleId }
-      );
-      if (bookErr || !bookedRows || bookedRows.length === 0) {
-        return {
-          success: false,
-          error: "Jadwal biometrik yang dipilih sudah penuh atau tidak tersedia.",
-        };
-      }
-      bookedScheduleId = params.scheduleId;
-      const sched = bookedRows[0];
-      if (!validIsoTime && sched?.tanggal && sched?.jam_mulai) {
-        validIsoTime = parseScheduleToIso(`${sched.tanggal} ${String(sched.jam_mulai).slice(0, 5)}`);
-      }
-    }
-
-    const nomorTiket =
-      params.nomorTiket && /^KTP-[A-Z0-9-]+$/i.test(params.nomorTiket)
-        ? params.nomorTiket.slice(0, 40)
-        : `KTP-${Date.now().toString().slice(-8)}`;
+    const validIsoTime = parseScheduleToIso(params.waktuKehadiranBiometrik);
 
     const payload = {
-      nomor_tiket: nomorTiket,
+      nomor_tiket: String(params.nomorTiket).slice(0, 40),
       user_id: user.id,
       jenis_pengajuan: String(params.jenisPengajuan || "KTP Baru / Pertama Kali").slice(0, 100),
-      dokumen_kk_url: sanitizeDocumentUrl(params.dokumenKkUrl),
-      dokumen_akta_url: sanitizeDocumentUrl(params.dokumenAktaUrl),
-      surat_kehilangan_url: sanitizeDocumentUrl(params.suratKehilanganUrl),
-      schedule_id: bookedScheduleId,
+      dokumen_kk_url: sanitizeOptionalUrl(params.dokumenKkUrl),
+      dokumen_akta_url: sanitizeOptionalUrl(params.dokumenAktaUrl),
+      surat_kehilangan_url: sanitizeOptionalUrl(params.suratKehilanganUrl),
       waktu_kehadiran_biometrik: validIsoTime,
       status: "menunggu_verifikasi" as const,
     };
 
-    const { data, error } = await supabase
-      .from("ktp_submissions")
-      .insert(payload)
-      .select()
-      .maybeSingle();
+    const syncProfile = async () => {
+      if (params.profileUpdates) {
+        try {
+          const updateData: Record<string, unknown> = {};
+          if (params.profileUpdates.nama_lengkap) updateData.nama_lengkap = params.profileUpdates.nama_lengkap;
+          if (params.profileUpdates.alamat) updateData.alamat = params.profileUpdates.alamat;
+          if (params.profileUpdates.jenis_kelamin) updateData.jenis_kelamin = params.profileUpdates.jenis_kelamin;
+          if (params.profileUpdates.nik && /^\d{16}$/.test(params.profileUpdates.nik)) {
+            updateData.nik = params.profileUpdates.nik;
+          }
 
-    if (error || !data) {
-      if (bookedScheduleId && adminClient) {
-        await adminClient.rpc("release_biometric_schedule", { p_schedule_id: bookedScheduleId });
+          if (Object.keys(updateData).length > 0) {
+            await supabase.from("profiles").update(updateData).eq("id", user.id);
+          }
+        } catch {
+          // sinkronisasi profil bersifat opsional non-blocking
+        }
       }
-      return {
-        success: false,
-        error: "Gagal menyimpan pengajuan KTP ke database.",
-      };
-    }
+    };
 
-    // Tandai pengajuan aktif sebelumnya (hanya yang belum selesai/ditolak) sebagai pengajuan ulang
-    if (adminClient) {
-      await adminClient
+    const markPreviousAsResubmitted = async (newId: string) => {
+      const db = createAdminClient() || supabase;
+      await db
         .from("ktp_submissions")
         .update({
           status: "pengajuan_ulang",
           updated_at: new Date().toISOString(),
         })
         .eq("user_id", user.id)
-        .neq("id", data.id)
-        .in("status", ["menunggu_verifikasi", "diproses", "menunggu_cetak"]);
+        .neq("id", newId)
+        .neq("status", "pengajuan_ulang");
+    };
+
+    // 1. Coba insert via client session user
+    const { data, error } = await supabase
+      .from("ktp_submissions")
+      .insert(payload)
+      .select()
+      .maybeSingle();
+
+    if (!error && data) {
+      await markPreviousAsResubmitted(data.id);
+      await syncProfile();
+      return { success: true, data };
     }
 
-    if (params.profileUpdates) {
-      const updateData: Record<string, string> = {};
-      if (params.profileUpdates.nama_lengkap?.trim()) {
-        updateData.nama_lengkap = params.profileUpdates.nama_lengkap.trim().slice(0, 120);
+    // 2. Fallback via Admin Client jika RLS belum terpasang di database
+    const adminClient = createAdminClient();
+    if (adminClient) {
+      const { data: adminData, error: adminErr } = await adminClient
+        .from("ktp_submissions")
+        .insert(payload)
+        .select()
+        .maybeSingle();
+
+      if (!adminErr && adminData) {
+        await markPreviousAsResubmitted(adminData.id);
+        await syncProfile();
+        return { success: true, data: adminData };
       }
-      if (params.profileUpdates.alamat?.trim()) {
-        updateData.alamat = params.profileUpdates.alamat.trim().slice(0, 300);
-      }
-      if (
-        params.profileUpdates.jenis_kelamin === "Laki-laki" ||
-        params.profileUpdates.jenis_kelamin === "Perempuan"
-      ) {
-        updateData.jenis_kelamin = params.profileUpdates.jenis_kelamin;
-      }
-      if (Object.keys(updateData).length > 0) {
-        await supabase.from("profiles").update(updateData).eq("id", user.id);
+      if (adminErr) {
+        return { success: false, error: adminErr.message };
       }
     }
 
-    return { success: true, data };
-  } catch {
-    if (bookedScheduleId && adminClient) {
-      await adminClient.rpc("release_biometric_schedule", { p_schedule_id: bookedScheduleId });
-    }
-    return { success: false, error: "Terjadi kesalahan internal." };
+    return {
+      success: false,
+      error: error?.message || "Gagal menyimpan pengajuan KTP ke database.",
+    };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Terjadi kesalahan internal.";
+    return { success: false, error: message };
   }
 }
 
 /**
- * Mengambil daftar pengajuan KTP milik user saat ini (menggunakan RLS session warga)
+ * Mengambil daftar pengajuan KTP milik user saat ini
  */
 export async function getMyKtpSubmissions(): Promise<{
   success: boolean;
@@ -162,12 +194,23 @@ export async function getMyKtpSubmissions(): Promise<{
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (error) {
-      return { success: false, error: "Gagal mengambil riwayat pengajuan KTP." };
+    if (!error && data) {
+      return { success: true, data };
     }
 
-    return { success: true, data: data || [] };
-  } catch {
-    return { success: false, error: "Terjadi kesalahan internal." };
+    const adminClient = createAdminClient();
+    if (adminClient) {
+      const { data: adminData } = await adminClient
+        .from("ktp_submissions")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      return { success: true, data: adminData || [] };
+    }
+
+    return { success: false, error: error?.message };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Terjadi kesalahan internal.";
+    return { success: false, error: message };
   }
 }

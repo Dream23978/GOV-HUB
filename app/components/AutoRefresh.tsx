@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 const SYNC_CHANNEL_NAME = "govhub-sync";
 const SYNC_STORAGE_KEY = "govhub_sync_ping";
@@ -23,35 +23,12 @@ export function broadcastSync() {
   }
 }
 
-export function AutoRefresh({ intervalMs = 5000 }: { intervalMs?: number }) {
+export function AutoRefresh({ intervalMs = 3000 }: { intervalMs?: number }) {
   const router = useRouter();
-  const pathname = usePathname();
   const lastRefreshRef = useRef<number>(0);
 
   useEffect(() => {
-    const isEditingBlocked = () => {
-      if (
-        pathname?.includes("/ajukan") ||
-        pathname?.includes("/edit") ||
-        pathname?.includes("/profil") ||
-        pathname?.includes("/auth")
-      ) {
-        return true;
-      }
-      if (typeof document !== "undefined") {
-        const tag = document.activeElement?.tagName;
-        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
-          return true;
-        }
-        if (document.querySelector('[role="dialog"]')) {
-          return true;
-        }
-      }
-      return false;
-    };
-
     const triggerRefresh = () => {
-      if (isEditingBlocked()) return;
       const now = Date.now();
       // Cegah double-refresh terlalu berdekatan saat event beruntun (mis. focus + visibilitychange)
       if (now - lastRefreshRef.current < 400) return;
@@ -98,7 +75,7 @@ export function AutoRefresh({ intervalMs = 5000 }: { intervalMs?: number }) {
       window.removeEventListener("storage", handleStorage);
       if (channel) channel.close();
     };
-  }, [router, pathname, intervalMs]);
+  }, [router, intervalMs]);
 
   return null;
 }

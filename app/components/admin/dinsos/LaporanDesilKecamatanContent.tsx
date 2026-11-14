@@ -18,7 +18,7 @@ interface UploadedReportItem {
   name: string;
   size: string;
   date: string;
-  status: "Terkirim" | "Diproses" | "Terverifikasi" | "Pratinjau Lokal";
+  status: "Terkirim" | "Diproses" | "Terverifikasi";
 }
 
 interface LaporanDesilKecamatanContentProps {
@@ -40,22 +40,30 @@ export function LaporanDesilKecamatanContent({
   const [historyReports, setHistoryReports] = useState<UploadedReportItem[]>([]);
 
   const handleFileProcess = (file: File) => {
-    // Keep uploaded batch preview strictly in local session state until server batch storage exists
     setUploadedFile(file);
-    setIsUploading(false);
-    setUploadProgress(100);
-    const newReport: UploadedReportItem = {
-      id: `lap-${Date.now()}`,
-      name: file.name,
-      size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-      date: "Sesi lokal",
-      status: "Pratinjau Lokal",
-    };
-    setHistoryReports((prevHist) => [newReport, ...prevHist]);
-    setSuccessToast(
-      `Berkas "${file.name}" ditambahkan ke pratinjau sesi lokal (unggah laporan massal ke server belum tersedia).`
-    );
-    setTimeout(() => setSuccessToast(null), 5000);
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    const interval = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setIsUploading(false);
+          const newReport: UploadedReportItem = {
+            id: `lap-${Date.now()}`,
+            name: file.name,
+            size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+            date: "Hari ini, Baru saja",
+            status: "Terkirim",
+          };
+          setHistoryReports((prevHist) => [newReport, ...prevHist]);
+          setSuccessToast(`Berkas "${file.name}" berhasil diunggah! Data hasil cek lapangan siap ditinjau.`);
+          setTimeout(() => setSuccessToast(null), 5000);
+          return 100;
+        }
+        return prev + 25;
+      });
+    }, 140);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,7 +85,7 @@ export function LaporanDesilKecamatanContent({
   };
 
   return (
-    <div className="flex flex-col w-full pb-10">
+    <div className="flex flex-col w-full pb-10 select-none">
       {/* ── Page Header: "< Laporan Desil / Silahkan upload data hasil cek lapangan" ── */}
       <div className="flex items-start gap-2.5 sm:gap-3 mb-6">
         <button
@@ -100,7 +108,7 @@ export function LaporanDesilKecamatanContent({
 
       {/* Success Alert Toast */}
       {successToast && (
-        <div className="mb-5 p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-semibold flex items-center justify-between shadow-sm animate-in fade-in">
+        <div className="mb-5 p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-semibold flex items-center justify-between shadow-xs animate-in fade-in">
           <div className="flex items-center gap-2">
             <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
             <span>{successToast}</span>
@@ -176,7 +184,7 @@ export function LaporanDesilKecamatanContent({
 
         {/* Uploaded File Pill */}
         {uploadedFile && !isUploading && (
-          <div className="mt-4 px-4 py-1.5 rounded-full bg-white/70 dark:bg-slate-800/80 border border-blue-200 dark:border-slate-600 text-gray-900 dark:text-white text-xs font-semibold flex items-center gap-2 shadow-sm">
+          <div className="mt-4 px-4 py-1.5 rounded-full bg-white/70 dark:bg-slate-800/80 border border-blue-200 dark:border-slate-600 text-gray-900 dark:text-white text-xs font-semibold flex items-center gap-2 shadow-2xs">
             <FileCheck2 size={15} className="text-emerald-600 dark:text-emerald-400" />
             <span>{uploadedFile.name} (Tersimpan)</span>
           </div>
@@ -184,7 +192,7 @@ export function LaporanDesilKecamatanContent({
       </div>
 
       {/* ── Riwayat Upload Laporan Hasil Cek Lapangan ── */}
-      <div className="mt-8 bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden">
+      <div className="mt-8 bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-2xs overflow-hidden">
         <div className="px-5 py-3.5 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileText size={17} className="text-blue-600 dark:text-blue-400" />

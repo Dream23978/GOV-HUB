@@ -1,26 +1,26 @@
 import React from "react";
 import { AdminDashboardLayout } from "@/app/components/admin/AdminDashboardLayout";
-import { AdminSettingsContent } from "@/app/components/admin/AdminSettingsContent";
-import { requireAdminPageSession } from "@/lib/services/admin.service";
+import { PengaturanDesilContent } from "@/app/components/admin/dinsos/PengaturanDesilContent";
 
 export const metadata = {
   title: "Pengaturan Profil - Dinsos Kecamatan | GOV-HUB",
   description: "Kelola informasi akun dan data profil petugas Dinsos Kecamatan.",
 };
 
-export default async function DinsosKecamatanPengaturanPage() {
-  const session = await requireAdminPageSession("dinsos", "kecamatan");
-
+export default function DinsosKecamatanPengaturanPage() {
   return (
     <AdminDashboardLayout
       instansi="dinsos"
       instansiName="Dinas Sosial"
       roleTitle="Admin Kecamatan"
-      adminName={session.nama}
-      wilayahLabel={session.wilayahLabel}
+      adminName="Petugas Desil Genteng"
       basePath="/admin/dinsos/kecamatan/dashboard"
     >
-      <AdminSettingsContent session={session} roleTitle="Admin Kecamatan" />
+      <PengaturanDesilContent
+        roleTitle="Admin Kecamatan"
+        wilayah="Kecamatan Genteng, Surabaya"
+      />
     </AdminDashboardLayout>
   );
 }
+

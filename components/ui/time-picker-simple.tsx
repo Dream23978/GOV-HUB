@@ -65,7 +65,7 @@ export function TimePickerSimple({
             <Button
               variant="outline"
               id={id}
-              className="w-full justify-start font-normal h-auto py-2.5 px-3 rounded-xl border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-xs md:text-[13px] shadow-sm hover:border-blue-400 transition-colors gap-2.5 cursor-pointer"
+              className="w-full justify-start font-normal h-auto py-2.5 px-3 rounded-xl border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-750 text-xs md:text-[13px] shadow-sm hover:border-blue-400 transition-colors gap-2.5 cursor-pointer"
             >
               <Clock size={17} className="text-gray-800 dark:text-gray-200 flex-shrink-0" />
               {time ? (

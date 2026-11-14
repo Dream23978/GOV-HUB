@@ -23,7 +23,7 @@ export function ProfilDataGrid({ data }: ProfilDataGridProps) {
       {/* 2-Column Grid for the 6 primary items */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* 1. Nama Lengkap */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200/90 dark:border-slate-700/80 p-3.5 flex items-center gap-3 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200/90 dark:border-slate-700/80 p-3.5 flex items-center gap-3 shadow-xs">
           <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-slate-700/70 flex items-center justify-center text-gray-600 dark:text-gray-300 flex-shrink-0">
             <User size={18} />
           </div>
@@ -38,7 +38,7 @@ export function ProfilDataGrid({ data }: ProfilDataGridProps) {
         </div>
 
         {/* 2. NIK */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200/90 dark:border-slate-700/80 p-3.5 flex items-center gap-3 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200/90 dark:border-slate-700/80 p-3.5 flex items-center gap-3 shadow-xs">
           <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-slate-700/70 flex items-center justify-center text-gray-600 dark:text-gray-300 flex-shrink-0">
             <CreditCard size={18} />
           </div>
@@ -53,7 +53,7 @@ export function ProfilDataGrid({ data }: ProfilDataGridProps) {
         </div>
 
         {/* 3. Tempat & Tanggal */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200/90 dark:border-slate-700/80 p-3.5 flex items-center gap-3 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200/90 dark:border-slate-700/80 p-3.5 flex items-center gap-3 shadow-xs">
           <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-slate-700/70 flex items-center justify-center text-gray-600 dark:text-gray-300 flex-shrink-0">
             <Calendar size={18} />
           </div>
@@ -68,7 +68,7 @@ export function ProfilDataGrid({ data }: ProfilDataGridProps) {
         </div>
 
         {/* 4. Jenis Kelamin */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200/90 dark:border-slate-700/80 p-3.5 flex items-center gap-3 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200/90 dark:border-slate-700/80 p-3.5 flex items-center gap-3 shadow-xs">
           <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-slate-700/70 flex items-center justify-center text-gray-600 dark:text-gray-300 flex-shrink-0">
             {/* Male Symbol SVG */}
             <svg
@@ -95,14 +95,14 @@ export function ProfilDataGrid({ data }: ProfilDataGridProps) {
           </div>
         </div>
 
-        {/* 5. Alamat */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200/90 dark:border-slate-700/80 p-3.5 flex items-center gap-3 shadow-sm">
+        {/* 5. Aalamat */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200/90 dark:border-slate-700/80 p-3.5 flex items-center gap-3 shadow-xs">
           <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-slate-700/70 flex items-center justify-center text-gray-600 dark:text-gray-300 flex-shrink-0">
             <MapPin size={18} />
           </div>
           <div className="min-w-0 flex-1">
             <span className="text-[11px] text-gray-500 dark:text-gray-400 font-normal block leading-tight">
-              Alamat
+              Aalamat
             </span>
             <p className="text-xs font-bold text-gray-900 dark:text-white mt-0.5 leading-tight truncate">
               {data.alamat}
@@ -111,7 +111,7 @@ export function ProfilDataGrid({ data }: ProfilDataGridProps) {
         </div>
 
         {/* 6. No. Telepon */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200/90 dark:border-slate-700/80 p-3.5 flex items-center gap-3 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200/90 dark:border-slate-700/80 p-3.5 flex items-center gap-3 shadow-xs">
           <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-slate-700/70 flex items-center justify-center text-gray-600 dark:text-gray-300 flex-shrink-0">
             <Phone size={18} />
           </div>
@@ -127,7 +127,7 @@ export function ProfilDataGrid({ data }: ProfilDataGridProps) {
       </div>
 
       {/* 7. Email (Full-width card below) */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200/90 dark:border-slate-700/80 p-3.5 flex items-center gap-3 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200/90 dark:border-slate-700/80 p-3.5 flex items-center gap-3 shadow-xs">
         <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-slate-700/70 flex items-center justify-center text-gray-600 dark:text-gray-300 flex-shrink-0">
           <Mail size={18} />
         </div>

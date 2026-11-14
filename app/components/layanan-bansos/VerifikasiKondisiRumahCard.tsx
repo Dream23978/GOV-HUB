@@ -1,12 +1,11 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
-import { RefreshCw, AlertCircle, CheckCircle2, MapPin, Loader2 } from "lucide-react";
-import { uploadPrivateDocument } from "@/lib/upload-document";
+import { RefreshCw, AlertCircle, CheckCircle2, MapPin } from "lucide-react";
 
 interface VerifikasiKondisiRumahCardProps {
   photo?: string | null;
-  onPhotoCaptured?: (photoPreviewUrl: string | null, storagePath?: string | null) => void;
+  onPhotoCaptured?: (photoDataUrl: string | null) => void;
 }
 
 export function VerifikasiKondisiRumahCard({
@@ -21,7 +20,6 @@ export function VerifikasiKondisiRumahCard({
   const [photo, setPhoto] = useState<string | null>(initialPhoto || null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [geotag, setGeotag] = useState<string | null>(null);
 
   // Stop camera stream when unmounting
@@ -77,16 +75,16 @@ export function VerifikasiKondisiRumahCard({
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           setGeotag(
-            `Lat: ${pos.coords.latitude.toFixed(4)}, Long: ${pos.coords.longitude.toFixed(4)}`
+            `Lat: ${pos.coords.latitude.toFixed(4)}, Long: ${pos.coords.longitude.toFixed(4)} • Surabaya`
           );
         },
         () => {
-          setGeotag("Lokasi perangkat (GPS tidak diizinkan)");
+          setGeotag("Kota Surabaya, Jawa Timur (-7.2575, 112.7521)");
         },
         { timeout: 5000 }
       );
     } else {
-      setGeotag("Lokasi perangkat");
+      setGeotag("Kota Surabaya, Jawa Timur");
     }
 
     try {
@@ -153,55 +151,30 @@ export function VerifikasiKondisiRumahCard({
   };
 
   const capturePhoto = () => {
-    if (!videoRef.current || !canvasRef.current || isUploading) return;
+    if (!videoRef.current || !canvasRef.current) return;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    const rawWidth = video.videoWidth || 640;
-    const rawHeight = video.videoHeight || 480;
-    const scale = rawWidth > 1280 ? 1280 / rawWidth : 1;
-    canvas.width = Math.round(rawWidth * scale);
-    canvas.height = Math.round(rawHeight * scale);
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
 
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const previewDataUrl = canvas.toDataURL("image/jpeg", 0.78);
-    setCameraError(null);
-    setIsUploading(true);
-    stopCamera();
-
-    canvas.toBlob(
-      async (blob) => {
-        try {
-          if (!blob) {
-            setCameraError("Gagal memproses hasil tangkapan kamera.");
-            return;
-          }
-          const file = new File([blob], `rumah-${Date.now()}.jpg`, { type: "image/jpeg" });
-          const uploadRes = await uploadPrivateDocument(file, "bansos", { imagesOnly: true });
-          if (!uploadRes.success || !uploadRes.path) {
-            setCameraError(uploadRes.error || "Gagal mengunggah foto kondisi rumah.");
-            return;
-          }
-          const displayUrl = uploadRes.signedUrl || previewDataUrl;
-          setPhoto(displayUrl);
-          onPhotoCaptured?.(displayUrl, uploadRes.path);
-        } catch {
-          setCameraError("Terjadi kesalahan saat mengunggah foto kondisi rumah.");
-        } finally {
-          setIsUploading(false);
-        }
-      },
-      "image/jpeg",
-      0.78
-    );
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+      setPhoto(dataUrl);
+      if (onPhotoCaptured) {
+        onPhotoCaptured(dataUrl);
+      }
+      stopCamera();
+    }
   };
 
   const retakePhoto = () => {
     setPhoto(null);
-    onPhotoCaptured?.(null, null);
+    if (onPhotoCaptured) {
+      onPhotoCaptured(null);
+    }
     startCamera();
   };
 
@@ -245,8 +218,7 @@ export function VerifikasiKondisiRumahCard({
                   <button
                     type="button"
                     onClick={capturePhoto}
-                    disabled={isUploading}
-                    className="w-12 h-12 rounded-full border-2 border-white bg-red-600 hover:bg-red-700 active:scale-90 shadow-lg flex items-center justify-center text-white transition-all cursor-pointer disabled:opacity-60"
+                    className="w-12 h-12 rounded-full border-3 border-white bg-red-600 hover:bg-red-700 active:scale-90 shadow-lg flex items-center justify-center text-white transition-all cursor-pointer"
                     aria-label="Ambil Foto"
                   >
                     <div className="w-4 h-4 rounded-full bg-white" />
@@ -266,10 +238,10 @@ export function VerifikasiKondisiRumahCard({
                 />
 
                 {/* Geotag & Time Badge Overlay */}
-                <div className="absolute bottom-2 left-2 right-2 bg-black/60 backdrop-blur-sm text-white p-2 rounded-lg text-[10px] flex items-center justify-between">
+                <div className="absolute bottom-2 left-2 right-2 bg-black/60 backdrop-blur-xs text-white p-2 rounded-lg text-[10px] flex items-center justify-between">
                   <div className="flex items-center gap-1 truncate">
                     <MapPin size={11} className="text-emerald-400 flex-shrink-0" />
-                    <span className="truncate">{geotag || "Lokasi terdeteksi"}</span>
+                    <span className="truncate">{geotag || "Kota Surabaya, Jawa Timur"}</span>
                   </div>
                   <span className="text-emerald-400 font-semibold flex items-center gap-1 flex-shrink-0 ml-1">
                     <CheckCircle2 size={11} /> Terverifikasi
@@ -287,29 +259,20 @@ export function VerifikasiKondisiRumahCard({
               </div>
             )}
 
-            {/* 3. Empty Placeholder / Upload Progress */}
+            {/* 3. Empty Placeholder (Before camera is opened or after camera error) */}
             {!isCameraOpen && !photo && (
               <div className="flex flex-col items-center justify-center text-center p-4">
-                {isUploading ? (
-                  <div className="flex flex-col items-center gap-2 text-blue-600 dark:text-blue-400">
-                    <Loader2 size={22} className="animate-spin" />
-                    <span className="text-xs font-semibold">Mengunggah foto terverifikasi...</span>
-                  </div>
-                ) : (
-                  <>
-                    <span className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                      Belum ada foto rumah
-                    </span>
-                    <button
-                      type="button"
-                      onClick={startCamera}
-                      disabled={isLoading}
-                      className="text-xs font-semibold text-gray-900 dark:text-white hover:underline focus:outline-none cursor-pointer"
-                    >
-                      {isLoading ? "Menghubungkan kamera..." : "Buka Kamera"}
-                    </button>
-                  </>
-                )}
+                <span className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                  Belum ada foto rumah
+                </span>
+                <button
+                  type="button"
+                  onClick={startCamera}
+                  disabled={isLoading}
+                  className="text-xs font-semibold text-gray-900 dark:text-white hover:underline focus:outline-none cursor-pointer"
+                >
+                  {isLoading ? "Menghubungkan kamera..." : "Buka Kamera"}
+                </button>
               </div>
             )}
           </div>

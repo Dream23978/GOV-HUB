@@ -7,6 +7,7 @@ import { ForgotPasswordLayout } from "@/app/components/forgot-password/ForgotPas
 import { PasswordField } from "@/app/components/forgot-password/PasswordField";
 import { PasswordRulesChecklist } from "@/app/components/forgot-password/PasswordRulesChecklist";
 import ScrollAnimate from "@/app/components/ScrollAnimate";
+import { createClient } from "@/lib/supabase/client";
 import { updateUserPasswordAction } from "@/app/actions/auth";
 
 const resetPasswordSchema = z
@@ -71,6 +72,16 @@ function ResetPasswordContent() {
     setErrors({});
 
     try {
+      // 1. Coba update via browser client (jika ada recovery session)
+      const supabase = createClient();
+      const clientRes = await supabase.auth.updateUser({ password });
+
+      if (!clientRes.error) {
+        router.push("/auth/forgot-password/success");
+        return;
+      }
+
+      // 2. Jika client belum memiliki session, gunakan Server Action
       const serverUpdate = await updateUserPasswordAction(password, email);
 
       if (serverUpdate.success) {
@@ -78,10 +89,12 @@ function ResetPasswordContent() {
         return;
       }
 
+      // Jika keduanya gagal
       setErrors({
         general:
           serverUpdate.error ||
-          "Gagal memperbarui kata sandi. Pastikan Anda sudah memverifikasi kode OTP.",
+          clientRes.error?.message ||
+          "Gagal memperbarui kata sandi. Pastikan SUPABASE_SERVICE_ROLE_KEY valid di .env.local.",
       });
       setLoading(false);
     } catch {
@@ -117,7 +130,7 @@ function ResetPasswordContent() {
             placeholder="Buat password anda"
             value={password}
             onChange={handlePasswordChange}
-            error={errors.password}
+            error={undefined}
           />
           <PasswordRulesChecklist password={password} />
         </ScrollAnimate>

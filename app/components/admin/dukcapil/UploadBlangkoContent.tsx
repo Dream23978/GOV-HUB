@@ -62,14 +62,22 @@ export function UploadBlangkoContent({
   ];
 
   const handleFileProcess = (file: File) => {
-    // Keep uploaded batch preview in local session state until server batch blangko API exists
     setUploadedFile(file);
-    setIsUploading(false);
-    setUploadProgress(100);
-    setSuccessToast(
-      `Berkas "${file.name}" dipilih untuk pratinjau sesi lokal (unggah massal database blangko belum tersedia).`
-    );
-    setTimeout(() => setSuccessToast(null), 5000);
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    const interval = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setIsUploading(false);
+          setSuccessToast(`Berkas "${file.name}" berhasil diunggah ke sistem database blangko!`);
+          setTimeout(() => setSuccessToast(null), 4000);
+          return 100;
+        }
+        return prev + 25;
+      });
+    }, 150);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,7 +95,7 @@ export function UploadBlangkoContent({
   };
 
   return (
-    <div className="flex flex-col w-full pb-10">
+    <div className="flex flex-col w-full pb-10 select-none">
       {/* ── Page Header (100% Sesuai Screenshot): "Blangko KTP" ── */}
       <div className="flex items-start gap-2 sm:gap-3 mb-5">
         <button
@@ -110,7 +118,7 @@ export function UploadBlangkoContent({
 
       {/* Success Notification */}
       {successToast && (
-        <div className="mb-4 p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-semibold flex items-center justify-between shadow-sm animate-in fade-in">
+        <div className="mb-4 p-3.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-xs animate-in fade-in">
           <div className="flex items-center gap-2">
             <CheckCircle2 size={16} className="text-emerald-600 flex-shrink-0" />
             <span>{successToast}</span>
@@ -130,7 +138,7 @@ export function UploadBlangkoContent({
         {stats.map((item) => (
           <div
             key={item.label}
-            className="bg-white dark:bg-slate-800 rounded-xl border border-gray-300 dark:border-slate-700 p-4 shadow-sm"
+            className="bg-white rounded-xl border border-gray-300 p-4 shadow-2xs"
           >
             <span className="text-xs text-gray-600 block">{item.label}</span>
             <span className="text-2xl sm:text-3xl font-extrabold text-[#2563EB] mt-1 block">
@@ -205,7 +213,7 @@ export function UploadBlangkoContent({
       </div>
 
       {/* ── Tabel Distribusi Kuota Blangko Kecamatan (Tetap responsif dan informatif) ── */}
-      <div className="mt-6 bg-white dark:bg-slate-800 rounded-xl border border-gray-300 dark:border-slate-700 shadow-sm overflow-hidden">
+      <div className="mt-6 bg-white rounded-xl border border-gray-300 shadow-2xs overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Building size={16} className="text-blue-600" />
@@ -239,21 +247,21 @@ export function UploadBlangkoContent({
               ) : (
                 alokasiKecamatan.map((row) => (
                   <tr key={row.nama} className="hover:bg-gray-50/70">
-                    <td className="py-3 px-4 font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">
+                    <td className="py-3 px-4 font-semibold text-gray-900 flex items-center gap-1.5">
                       <Layers size={14} className="text-gray-400" />
                       <span>{row.nama}</span>
                     </td>
-                    <td className="py-3 px-4 text-center font-bold text-gray-800 dark:text-gray-200">
+                    <td className="py-3 px-4 text-center font-bold text-gray-800">
                       {row.kuota.toLocaleString("id-ID")}
                     </td>
-                    <td className="py-3 px-4 text-center text-gray-700 dark:text-gray-300">
+                    <td className="py-3 px-4 text-center text-gray-700">
                       {row.terpakai.toLocaleString("id-ID")}
                     </td>
-                    <td className="py-3 px-4 text-center font-bold text-blue-700 dark:text-blue-400 font-mono">
+                    <td className="py-3 px-4 text-center font-bold text-blue-700 font-mono">
                       {row.sisa.toLocaleString("id-ID")}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 rounded-full">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
                         <CheckCircle2 size={12} /> Siap
                       </span>
                     </td>

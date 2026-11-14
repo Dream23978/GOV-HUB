@@ -354,45 +354,38 @@ export function PengajuanKtpContent({
     }
   };
 
-  // Export CSV safely with formula-injection neutralization and Blob URL
+  // Export CSV
   const handleExportCSV = () => {
-    const escapeCsvCell = (raw: string | number | null | undefined) => {
-      const s = String(raw ?? "");
-      const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
-      return `"${safe.replace(/"/g, '""')}"`;
-    };
-
     const headers = ["No Pengajuan", "No Registrasi", "Nama Pemohon", "Lokasi", "Jenis", "Status", "Tanggal", "NIK"];
     const rows = filteredSubmissions.map((s) => [
-      escapeCsvCell(s.noPengajuan),
-      escapeCsvCell(s.nomorRegistrasi),
-      escapeCsvCell(s.pemohon),
-      escapeCsvCell(s.lokasi),
-      escapeCsvCell(s.jenis),
-      escapeCsvCell(s.status),
-      escapeCsvCell(s.tanggal),
-      escapeCsvCell(s.nik),
+      s.noPengajuan,
+      s.nomorRegistrasi,
+      `"${s.pemohon}"`,
+      `"${s.lokasi}"`,
+      s.jenis,
+      s.status,
+      s.tanggal,
+      `'${s.nik}`,
     ]);
 
     const csvContent =
-      "\uFEFF" + [headers.map(escapeCsvCell).join(","), ...rows.map((e) => e.join(","))].join("\n");
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
+    const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
-    link.href = url;
-    link.download = `data_pengajuan_ktp_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `data_pengajuan_ktp_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
 
     setNotification("Data pengajuan berhasil diekspor ke file CSV!");
     setTimeout(() => setNotification(null), 3000);
   };
 
   return (
-    <div className="flex flex-col w-full pb-10">
+    <div className="flex flex-col w-full pb-10 select-none">
       {/* ── Page Header: Back Arrow, Title "Pengajuan KTP", Subtitle ── */}
       <div className="flex items-start gap-2 sm:gap-3 mb-4 sm:mb-5">
         <button
@@ -415,7 +408,7 @@ export function PengajuanKtpContent({
 
       {/* Notification Toast */}
       {notification && (
-        <div className="mb-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-semibold flex items-center justify-between shadow-sm animate-in fade-in">
+        <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-xs animate-in fade-in">
           <div className="flex items-center gap-2">
             <CheckCircle2 size={16} className="text-emerald-600 flex-shrink-0" />
             <span>{notification}</span>
@@ -434,7 +427,7 @@ export function PengajuanKtpContent({
       <div className="relative w-full mb-3">
         <Search
           size={18}
-          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none"
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-800 font-bold pointer-events-none"
         />
         <input
           type="text"
@@ -442,7 +435,7 @@ export function PengajuanKtpContent({
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Cari NIK / Nama"
           aria-label="Cari NIK atau Nama"
-          className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm text-gray-900 dark:text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-500 dark:placeholder:text-gray-400 font-medium"
+          className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-400 bg-white text-xs sm:text-sm text-gray-900 shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-500 font-medium"
         />
       </div>
 
@@ -455,8 +448,7 @@ export function PengajuanKtpContent({
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              aria-label="Filter status pengajuan KTP"
-              className="w-full px-3 py-2 pr-8 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm text-gray-900 dark:text-white font-medium appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+              className="w-full px-3 py-2 pr-8 rounded-lg border border-gray-400 bg-white text-xs sm:text-sm text-gray-900 font-medium appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
             >
               <option value="all">Semua Status</option>
               <option value="Proses">Proses</option>
@@ -468,7 +460,7 @@ export function PengajuanKtpContent({
             </select>
             <ChevronDown
               size={16}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-700 pointer-events-none"
             />
           </div>
 
@@ -478,8 +470,7 @@ export function PengajuanKtpContent({
               <select
                 value={selectedKota}
                 onChange={(e) => setSelectedKota(e.target.value)}
-                aria-label="Filter kota pengajuan KTP"
-                className="w-full px-3 py-2 pr-8 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm text-gray-900 dark:text-white font-medium appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                className="w-full px-3 py-2 pr-8 rounded-lg border border-gray-400 bg-white text-xs sm:text-sm text-gray-900 font-medium appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
               >
                 <option value="all">Semua Kota</option>
                 {Array.from(
@@ -492,7 +483,7 @@ export function PengajuanKtpContent({
               </select>
               <ChevronDown
                 size={16}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-700 pointer-events-none"
               />
             </div>
           )}
@@ -503,8 +494,7 @@ export function PengajuanKtpContent({
               <select
                 value={selectedKecamatan}
                 onChange={(e) => setSelectedKecamatan(e.target.value)}
-                aria-label="Filter kecamatan pengajuan KTP"
-                className="w-full px-3 py-2 pr-8 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm text-gray-900 dark:text-white font-medium appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                className="w-full px-3 py-2 pr-8 rounded-lg border border-gray-400 bg-white text-xs sm:text-sm text-gray-900 font-medium appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
               >
                 <option value="all">Semua Kecamatan</option>
                 {Array.from(
@@ -517,7 +507,7 @@ export function PengajuanKtpContent({
               </select>
               <ChevronDown
                 size={16}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-700 pointer-events-none"
               />
             </div>
           )}
@@ -531,8 +521,7 @@ export function PengajuanKtpContent({
               type="button"
               onClick={() => setShowDatePicker((prev) => !prev)}
               title="Filter Tanggal"
-              aria-label="Filter Tanggal"
-              className={`bg-black hover:bg-gray-800 active:scale-95 text-white px-5 py-2 rounded-lg flex items-center justify-center transition-all cursor-pointer shadow-sm ${
+              className={`bg-black hover:bg-gray-800 active:scale-95 text-white px-5 py-2 rounded-lg flex items-center justify-center transition-all cursor-pointer shadow-xs ${
                 selectedDate ? "ring-2 ring-blue-500" : ""
               }`}
             >
@@ -540,9 +529,9 @@ export function PengajuanKtpContent({
             </button>
 
             {showDatePicker && (
-              <div className="absolute right-0 top-full mt-2 z-30 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl shadow-xl p-3 w-64 animate-in fade-in">
+              <div className="absolute right-0 top-full mt-2 z-30 bg-white border border-gray-300 rounded-xl shadow-xl p-3 w-64 animate-in fade-in">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-gray-800 dark:text-gray-200">Pilih Tanggal</span>
+                  <span className="text-xs font-bold text-gray-800">Pilih Tanggal</span>
                   {selectedDate && (
                     <button
                       type="button"
@@ -550,7 +539,7 @@ export function PengajuanKtpContent({
                         setSelectedDate("");
                         setShowDatePicker(false);
                       }}
-                      className="text-[10px] text-red-600 dark:text-red-400 hover:underline"
+                      className="text-[10px] text-red-600 hover:underline"
                     >
                       Reset
                     </button>
@@ -563,8 +552,7 @@ export function PengajuanKtpContent({
                     setSelectedDate(e.target.value);
                     setShowDatePicker(false);
                   }}
-                  aria-label="Pilih tanggal pengajuan"
-                  className="w-full text-xs p-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-white rounded-lg focus:outline-blue-500"
+                  className="w-full text-xs p-2 border border-gray-300 rounded-lg focus:outline-blue-500"
                 />
               </div>
             )}
@@ -575,8 +563,7 @@ export function PengajuanKtpContent({
             type="button"
             onClick={handleExportCSV}
             title="Download CSV"
-            aria-label="Download CSV"
-            className="bg-black hover:bg-gray-800 active:scale-95 text-white px-5 py-2 rounded-lg flex items-center justify-center transition-all cursor-pointer shadow-sm"
+            className="bg-black hover:bg-gray-800 active:scale-95 text-white px-5 py-2 rounded-lg flex items-center justify-center transition-all cursor-pointer shadow-xs"
           >
             <Download size={18} />
           </button>
@@ -584,14 +571,14 @@ export function PengajuanKtpContent({
       </div>
 
       {/* ── Table Container ── */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-xs border border-gray-300 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             {/* Header */}
             <thead>
               <tr className="bg-[#0084FF] text-white text-xs sm:text-sm">
                 <th className="py-3 px-4 font-bold tracking-tight">No Pengajuan</th>
-                <th className="py-3 px-4 font-bold tracking-tight">Pemohon</th>
+                <th className="py-3 px-4 font-bold tracking-tight">Pemohonan</th>
                 <th className="py-3 px-4 font-bold tracking-tight">Jenis</th>
                 <th className="py-3 px-4 font-bold tracking-tight text-center">Status</th>
                 <th className="py-3 px-4 font-bold tracking-tight text-center">Tanggal</th>
@@ -600,10 +587,10 @@ export function PengajuanKtpContent({
             </thead>
 
             {/* Body */}
-            <tbody className="divide-y divide-gray-200 dark:divide-slate-700 text-xs sm:text-sm">
+            <tbody className="divide-y divide-gray-200 text-xs sm:text-sm">
               {filteredSubmissions.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400 font-medium">
+                  <td colSpan={6} className="py-8 text-center text-gray-500 font-medium">
                     Tidak ada data pengajuan yang cocok dengan filter.
                   </td>
                 </tr>
@@ -611,46 +598,46 @@ export function PengajuanKtpContent({
                 filteredSubmissions.map((row) => (
                   <tr
                     key={row.id}
-                    className="hover:bg-blue-50/40 dark:hover:bg-slate-700/40 transition-colors bg-white dark:bg-slate-800"
+                    className="hover:bg-blue-50/40 transition-colors bg-white"
                   >
                     {/* No Pengajuan */}
                     <td className="py-3.5 px-4 align-middle">
-                      <div className="font-bold text-gray-900 dark:text-white leading-tight">
+                      <div className="font-bold text-gray-900 leading-tight">
                         {row.noPengajuan}
                       </div>
-                      <div className="text-[11px] sm:text-xs text-gray-600 dark:text-gray-400 font-mono mt-0.5">
+                      <div className="text-[11px] sm:text-xs text-gray-600 font-mono mt-0.5">
                         {row.nomorRegistrasi}
                       </div>
                     </td>
 
-                    {/* Pemohon */}
+                    {/* Pemohonan */}
                     <td className="py-3.5 px-4 align-middle">
-                      <div className="font-bold text-gray-900 dark:text-white leading-tight">
+                      <div className="font-bold text-gray-900 leading-tight">
                         {row.pemohon}
                       </div>
-                      <div className="text-[11px] sm:text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                      <div className="text-[11px] sm:text-xs text-gray-600 mt-0.5">
                         {row.lokasi}
                       </div>
                     </td>
 
                     {/* Jenis */}
-                    <td className="py-3.5 px-4 align-middle font-medium text-gray-800 dark:text-gray-200">
+                    <td className="py-3.5 px-4 align-middle font-medium text-gray-800">
                       {row.jenis}
                     </td>
 
                     {/* Status Badge */}
                     <td className="py-3.5 px-4 align-middle text-center">
                       <span
-                        className={`inline-block font-semibold text-xs px-3.5 py-1 rounded-md shadow-sm whitespace-nowrap ${
+                        className={`inline-block font-semibold text-xs px-3.5 py-1 rounded-md shadow-2xs whitespace-nowrap ${
                           row.status === "Ditolak"
-                            ? "bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"
+                            ? "bg-rose-100 text-rose-700"
                             : row.status === "KTP Selesai"
-                            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                            ? "bg-emerald-100 text-emerald-800"
                             : row.status === "Menunggu Cetak"
-                            ? "bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300"
+                            ? "bg-sky-100 text-sky-800"
                             : row.status === "Pengajuan Ulang"
-                            ? "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300"
-                            : "bg-[#FED7AA] text-[#C2410C] dark:bg-amber-950/60 dark:text-amber-300"
+                            ? "bg-slate-200 text-slate-700"
+                            : "bg-[#FED7AA] text-[#C2410C]"
                         }`}
                       >
                         {row.status}
@@ -658,7 +645,7 @@ export function PengajuanKtpContent({
                     </td>
 
                     {/* Tanggal */}
-                    <td className="py-3.5 px-4 align-middle text-center text-gray-800 dark:text-gray-200 font-medium whitespace-nowrap">
+                    <td className="py-3.5 px-4 align-middle text-center text-gray-800 font-medium whitespace-nowrap">
                       {row.tanggal}
                     </td>
 
@@ -672,7 +659,7 @@ export function PengajuanKtpContent({
                             setShowRejectInput(false);
                             setRejectReason("");
                           }}
-                          className="bg-black hover:bg-gray-800 dark:bg-blue-600 dark:hover:bg-blue-700 active:scale-95 text-white text-xs font-semibold px-4 py-1.5 rounded-lg transition-all cursor-pointer shadow-sm whitespace-nowrap"
+                          className="bg-black hover:bg-gray-800 active:scale-95 text-white text-xs font-semibold px-4 py-1.5 rounded-lg transition-all cursor-pointer shadow-xs whitespace-nowrap"
                         >
                           Lihat Detail
                         </button>
@@ -695,7 +682,7 @@ export function PengajuanKtpContent({
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 animate-in fade-in"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 animate-in fade-in"
         >
           <div className="bg-white dark:bg-[#101F3C] rounded-2xl w-full max-w-xl shadow-2xl border border-gray-200 dark:border-white/10 p-5 sm:p-6 animate-in zoom-in-95 max-h-[92vh] overflow-y-auto">
             {/* Header Modal: Detail Pengajuan KTP KTP – 2026 – 001 */}
@@ -809,9 +796,9 @@ export function PengajuanKtpContent({
               <button
                 type="button"
                 onClick={() => setShowBlangkoDropdown((prev) => !prev)}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-white/20 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-white shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-white/20 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-white shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
               >
-                <span>Ketersediaan Blangko</span>
+                <span>Ketersedian Blangko</span>
                 <span
                   className={`w-2.5 h-2.5 rounded-full ${
                     blangkoStatus === "tersedia" ? "bg-emerald-500" : "bg-amber-500"
@@ -848,7 +835,7 @@ export function PengajuanKtpContent({
                         Tersedia
                       </div>
                       <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                        Blangko KTP tersedia, siap digunakan ({blangkoStock.toLocaleString("id-ID")})
+                        Blangko KTP Tersedia siap di gunakan ({blangkoStock.toLocaleString("id-ID")})
                       </div>
                     </div>
                   </label>
@@ -928,7 +915,7 @@ export function PengajuanKtpContent({
                     type="button"
                     disabled={!rejectReason.trim() || isProcessing}
                     onClick={() => handleConfirmReject(selectedSubmission.id)}
-                    className="px-4 py-1.5 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 cursor-pointer shadow-sm transition-colors flex items-center gap-1.5"
+                    className="px-4 py-1.5 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 cursor-pointer shadow-xs transition-colors flex items-center gap-1.5"
                   >
                     {isProcessing ? <Loader2 size={13} className="animate-spin" /> : null}
                     <span>Konfirmasi Tolak Pengajuan</span>
@@ -963,7 +950,7 @@ export function PengajuanKtpContent({
                 </button>
               )}
 
-              {canManageTracking && canApprove && selectedSubmission.status === "Menunggu Cetak" && (
+              {canManageTracking && selectedSubmission.status === "Menunggu Cetak" && (
                 <button
                   type="button"
                   disabled={isProcessing}
@@ -987,7 +974,7 @@ export function PengajuanKtpContent({
                 </button>
               )}
 
-              {(canApprove || canManageTracking) && selectedSubmission.status !== "Ditolak" && selectedSubmission.status !== "Pengajuan Ulang" && selectedSubmission.status !== "Perekaman Biometrik" && selectedSubmission.status !== "Menunggu Cetak" && selectedSubmission.status !== "KTP Selesai" && (
+              {canApprove && selectedSubmission.status !== "Ditolak" && selectedSubmission.status !== "Pengajuan Ulang" && selectedSubmission.status !== "Perekaman Biometrik" && selectedSubmission.status !== "Menunggu Cetak" && selectedSubmission.status !== "KTP Selesai" && (
                 <button
                   type="button"
                   disabled={isProcessing}

@@ -58,10 +58,21 @@ export function AdminDukcapilDashboardContent({
   initialCounts,
   initialBiometricCount = 0,
   canManageBlangko = true,
-  canApprove = true,
 }: AdminDukcapilDashboardContentProps) {
   const router = useRouter();
-  const liveWilayah = wilayah;
+  const [liveWilayah, setLiveWilayah] = useState(wilayah);
+
+  React.useEffect(() => {
+    try {
+      const stored = localStorage.getItem("govhub_admin_session");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.wilayah) setLiveWilayah(parsed.wilayah);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const [submissions, setSubmissions] = useState<DukcapilSubmissionRow[]>(() => {
     return initialSubmissions ?? [];
@@ -102,36 +113,6 @@ export function AdminDukcapilDashboardContent({
   const [blangkoStock] = useState<number>(10000);
   const [showBlangkoDropdown, setShowBlangkoDropdown] = useState<boolean>(true);
   const [showRejectInput, setShowRejectInput] = useState<boolean>(false);
-  const [statusFeedback, setStatusFeedback] = useState<{ type: "ok" | "err"; text: string } | null>(null);
-
-  const handleAdvanceStatus = async (
-    id: string,
-    nextStatus: "diproses" | "menunggu_cetak" | "selesai",
-    nextBadge: string
-  ) => {
-    setIsProcessing(true);
-    setStatusFeedback(null);
-    try {
-      const res = await updateKtpSubmissionStatusAction({ id, status: nextStatus });
-      if (!res.success) {
-        setStatusFeedback({ type: "err", text: res.error || "Gagal memperbarui status pengajuan KTP." });
-        return;
-      }
-      setSubmissions((prev) =>
-        prev.map((item) =>
-          item.id === id ? { ...item, statusBadge: nextBadge, statusRaw: nextStatus } : item
-        )
-      );
-      setSelectedSubmission((prev) =>
-        prev && prev.id === id ? { ...prev, statusBadge: nextBadge, statusRaw: nextStatus } : prev
-      );
-      setStatusFeedback({ type: "ok", text: `Status diperbarui menjadi "${nextBadge}".` });
-    } catch {
-      setStatusFeedback({ type: "err", text: "Terjadi kesalahan saat memperbarui status KTP." });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
   const [rejectReason, setRejectReason] = useState<string>("");
 
   const handleReject = async (id: string) => {
@@ -175,7 +156,7 @@ export function AdminDukcapilDashboardContent({
         <button
           type="button"
           onClick={() => router.back()}
-          className="w-8 h-8 rounded-full bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 border border-gray-300 dark:border-slate-600 flex items-center justify-center text-gray-700 dark:text-gray-200 mt-0.5 cursor-pointer shadow-sm transition-colors"
+          className="w-8 h-8 rounded-full bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 border border-gray-300 dark:border-slate-600 flex items-center justify-center text-gray-700 dark:text-gray-200 mt-0.5 cursor-pointer shadow-2xs transition-colors"
           aria-label="Kembali"
         >
           <ChevronLeft size={18} strokeWidth={2.5} />
@@ -203,7 +184,7 @@ export function AdminDukcapilDashboardContent({
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-blue-200/90 dark:border-slate-700 shadow-sm p-4 flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-blue-200/90 dark:border-slate-700 shadow-2xs p-4 flex items-center justify-between">
             <div>
               <span className="text-2xl font-black text-gray-900 dark:text-white block">
                 {counts.total}
@@ -220,7 +201,7 @@ export function AdminDukcapilDashboardContent({
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm p-4 flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-2xs p-4 flex items-center justify-between">
             <div>
               <span className="text-2xl font-black text-[#16a34a] dark:text-emerald-400 block">
                 {counts.selesai}
@@ -237,7 +218,7 @@ export function AdminDukcapilDashboardContent({
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm p-4 flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-2xs p-4 flex items-center justify-between">
             <div>
               <span className="text-2xl font-black text-amber-600 dark:text-amber-400 block">
                 {initialBiometricCount}
@@ -262,7 +243,7 @@ export function AdminDukcapilDashboardContent({
           Permohonan KTP Terbaru
         </h2>
 
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200/90 dark:border-slate-700 shadow-sm divide-y divide-gray-200/80 dark:divide-slate-700 overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200/90 dark:border-slate-700 shadow-2xs divide-y divide-gray-200/80 dark:divide-slate-700 overflow-hidden">
           {submissions.length === 0 ? (
             <div className="p-8 text-center text-xs text-gray-500 dark:text-gray-400">
               Belum ada permohonan pencetakan KTP di database.
@@ -274,7 +255,7 @@ export function AdminDukcapilDashboardContent({
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div
-                  className={`w-10 h-10 rounded-full ${item.bgInitial} ${item.textInitial} flex items-center justify-center font-bold text-sm flex-shrink-0 shadow-sm select-none`}
+                  className={`w-10 h-10 rounded-full ${item.bgInitial} ${item.textInitial} flex items-center justify-center font-bold text-sm flex-shrink-0 shadow-2xs select-none`}
                 >
                   {item.initial}
                 </div>
@@ -292,7 +273,7 @@ export function AdminDukcapilDashboardContent({
                 </div>
               </div>
 
-              <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-6 pl-0">
+              <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-6 pl-13 sm:pl-0">
                 <span className="inline-block bg-[#E0F2FE] text-[#0284C7] dark:bg-sky-950/60 dark:text-sky-300 text-[11px] font-semibold px-3 py-1 rounded-full border border-sky-200/70 whitespace-nowrap">
                   {item.statusBadge}
                 </span>
@@ -316,7 +297,7 @@ export function AdminDukcapilDashboardContent({
 
       {/* Modal Detail Dukcapil - 100% Match Mockup Screenshot */}
       {selectedSubmission && (
-        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 animate-in fade-in">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 animate-in fade-in">
           <div className="bg-white dark:bg-[#101F3C] rounded-2xl w-full max-w-xl shadow-2xl border border-gray-200 dark:border-white/10 p-5 sm:p-6 animate-in zoom-in-95 max-h-[92vh] overflow-y-auto">
             {/* Header Modal */}
             <div className="flex items-center justify-between pb-2 mb-2">
@@ -436,9 +417,9 @@ export function AdminDukcapilDashboardContent({
               <button
                 type="button"
                 onClick={() => setShowBlangkoDropdown((prev) => !prev)}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-white/20 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-white shadow-sm hover:bg-slate-50 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-white/20 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-white shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
               >
-                <span>Ketersediaan Blangko</span>
+                <span>Ketersedian Blangko</span>
                 <span
                   className={`w-2.5 h-2.5 rounded-full ${
                     blangkoStatus === "tersedia" ? "bg-emerald-500" : "bg-amber-500"
@@ -475,7 +456,7 @@ export function AdminDukcapilDashboardContent({
                         Tersedia
                       </div>
                       <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                        Blangko KTP tersedia, siap digunakan ({blangkoStock.toLocaleString("id-ID")})
+                        Blangko KTP Tersedia siap di gunakan ({blangkoStock.toLocaleString("id-ID")})
                       </div>
                     </div>
                   </label>
@@ -555,7 +536,7 @@ export function AdminDukcapilDashboardContent({
                     type="button"
                     disabled={!rejectReason.trim() || isProcessing}
                     onClick={() => handleReject(selectedSubmission.id)}
-                    className="px-4 py-1.5 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 cursor-pointer shadow-sm transition-colors"
+                    className="px-4 py-1.5 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 cursor-pointer shadow-xs transition-colors"
                   >
                     {isProcessing ? "Memproses..." : "Konfirmasi Tolak Pengajuan"}
                   </button>
@@ -563,72 +544,8 @@ export function AdminDukcapilDashboardContent({
               </div>
             )}
 
-            {statusFeedback && (
-              <div
-                className={`mb-3 p-3 rounded-xl border text-xs font-semibold ${
-                  statusFeedback.type === "err"
-                    ? "bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300"
-                    : "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200"
-                }`}
-              >
-                {statusFeedback.text}
-              </div>
-            )}
-
             {/* 6. ACTION BUTTONS */}
-            <div className="pt-3 border-t border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-end gap-2">
-              {selectedSubmission.statusRaw !== "ditolak" &&
-                selectedSubmission.statusRaw !== "selesai" &&
-                !showRejectInput && (
-                  <>
-                    {canApprove && (
-                      <button
-                        type="button"
-                        disabled={isProcessing}
-                        onClick={() => setShowRejectInput(true)}
-                        className="px-3.5 py-2 rounded-lg text-xs font-bold border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 disabled:opacity-50 cursor-pointer transition-colors"
-                      >
-                        Tolak
-                      </button>
-                    )}
-                    {selectedSubmission.statusRaw === "menunggu_verifikasi" && (
-                      <button
-                        type="button"
-                        disabled={isProcessing}
-                        onClick={() =>
-                          handleAdvanceStatus(selectedSubmission.id, "diproses", "Perekaman Biometrik")
-                        }
-                        className="px-4 py-2 rounded-lg text-xs font-bold bg-[#0084FF] hover:bg-blue-600 text-white disabled:opacity-50 cursor-pointer shadow-sm transition-colors"
-                      >
-                        Mulai Biometrik
-                      </button>
-                    )}
-                    {selectedSubmission.statusRaw === "diproses" && (
-                      <button
-                        type="button"
-                        disabled={isProcessing}
-                        onClick={() =>
-                          handleAdvanceStatus(selectedSubmission.id, "menunggu_cetak", "Menunggu Cetak")
-                        }
-                        className="px-4 py-2 rounded-lg text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white disabled:opacity-50 cursor-pointer shadow-sm transition-colors"
-                      >
-                        Perekaman Selesai
-                      </button>
-                    )}
-                    {canApprove && selectedSubmission.statusRaw === "menunggu_cetak" && (
-                      <button
-                        type="button"
-                        disabled={isProcessing}
-                        onClick={() =>
-                          handleAdvanceStatus(selectedSubmission.id, "selesai", "KTP Selesai")
-                        }
-                        className="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50 cursor-pointer shadow-sm transition-colors"
-                      >
-                        KTP Selesai
-                      </button>
-                    )}
-                  </>
-                )}
+            <div className="pt-3 border-t border-slate-200 dark:border-white/10 flex items-center justify-end gap-2.5">
               <button
                 type="button"
                 disabled={isProcessing}
@@ -636,9 +553,8 @@ export function AdminDukcapilDashboardContent({
                   setSelectedSubmission(null);
                   setShowRejectInput(false);
                   setRejectReason("");
-                  setStatusFeedback(null);
                 }}
-                className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 Tutup
               </button>

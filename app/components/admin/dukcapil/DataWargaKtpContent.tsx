@@ -85,7 +85,7 @@ export function DataWargaKtpContent({
   }, [wargaList, selectedStatus, selectedKecamatan, searchQuery]);
 
   return (
-    <div className="flex flex-col w-full pb-10">
+    <div className="flex flex-col w-full pb-10 select-none">
       {/* ── Page Header: Back Arrow, Title "Data Warga", Subtitle ── */}
       <div className="flex items-start gap-2 sm:gap-3 mb-4 sm:mb-5">
         <button
@@ -118,7 +118,7 @@ export function DataWargaKtpContent({
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Cari NIK / Nama"
           aria-label="Cari NIK atau Nama Warga"
-          className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm text-gray-900 dark:text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-500 dark:placeholder:text-gray-400 font-medium"
+          className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-400 bg-white text-xs sm:text-sm text-gray-900 shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-500 font-medium"
         />
       </div>
 
@@ -129,7 +129,7 @@ export function DataWargaKtpContent({
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="w-full px-3.5 py-2 pr-8 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm text-gray-900 dark:text-white font-medium appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+            className="w-full px-3.5 py-2 pr-8 rounded-lg border border-gray-400 bg-white text-xs sm:text-sm text-gray-900 font-medium appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
           >
             <option value="all">Semua Status</option>
             <option value="Aktif">Aktif</option>
@@ -147,7 +147,7 @@ export function DataWargaKtpContent({
           <select
             value={selectedKecamatan}
             onChange={(e) => setSelectedKecamatan(e.target.value)}
-            className="w-full px-3.5 py-2 pr-8 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm text-gray-900 dark:text-white font-medium appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+            className="w-full px-3.5 py-2 pr-8 rounded-lg border border-gray-400 bg-white text-xs sm:text-sm text-gray-900 font-medium appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
           >
             <option value="all">Semua Kecamatan</option>
             {kecamatanOptions.map((kec) => (
@@ -179,7 +179,7 @@ export function DataWargaKtpContent({
       </div>
 
       {/* ── Table Container (100% Mockup: Blue Header #2563EB: NIK, Nama, Desil, Status, Aksi) ── */}
-      <div className="rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800 overflow-hidden">
+      <div className="rounded-xl border border-gray-300 shadow-xs bg-white overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[620px]">
             {/* Header: Solid Blue #2563EB */}
@@ -232,7 +232,7 @@ export function DataWargaKtpContent({
                       <button
                         type="button"
                         onClick={() => setSelectedWarga(row)}
-                        className="bg-black hover:bg-gray-800 dark:bg-blue-600 dark:hover:bg-blue-700 active:scale-95 text-white text-xs font-semibold px-4 py-1.5 rounded-lg transition-all cursor-pointer shadow-sm whitespace-nowrap"
+                        className="bg-black hover:bg-gray-800 active:scale-95 text-white text-xs font-semibold px-4 py-1.5 rounded-lg transition-all cursor-pointer shadow-xs whitespace-nowrap"
                       >
                         Lihat Detail
                       </button>
@@ -247,23 +247,22 @@ export function DataWargaKtpContent({
 
       {/* ── Detail Modal Warga ── */}
       {selectedWarga && (
-        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 animate-in fade-in">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg shadow-2xl border border-gray-200 dark:border-slate-700 p-5 sm:p-6 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 animate-in fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl border border-gray-200 p-5 sm:p-6 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             {/* Header Modal */}
-            <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 pb-3 mb-4">
+            <div className="flex items-center justify-between border-b border-gray-200 pb-3 mb-4">
               <div>
-                <span className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400">
+                <span className="text-xs font-mono font-bold text-blue-600">
                   {selectedWarga.nikMasked} • Kependudukan SIAK
                 </span>
-                <h3 className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white">
+                <h3 className="text-base sm:text-lg font-extrabold text-gray-900">
                   Profil Data Kependudukan Warga
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedWarga(null)}
-                className="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white flex items-center justify-center cursor-pointer transition-colors"
-                aria-label="Tutup"
+                className="w-8 h-8 rounded-full hover:bg-gray-100 text-gray-500 hover:text-black flex items-center justify-center cursor-pointer transition-colors"
               >
                 <X size={18} />
               </button>
@@ -271,73 +270,73 @@ export function DataWargaKtpContent({
 
             {/* Warga Details Grid */}
             <div className="space-y-3 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-xl bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-700">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-xl bg-gray-50 border border-gray-200">
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5 mb-0.5">
+                  <span className="text-gray-500 flex items-center gap-1.5 mb-0.5">
                     <User size={13} /> Nama Lengkap
                   </span>
-                  <span className="font-bold text-gray-900 dark:text-white text-sm">
+                  <span className="font-bold text-gray-900 text-sm">
                     {selectedWarga.nama}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5 mb-0.5">
+                  <span className="text-gray-500 flex items-center gap-1.5 mb-0.5">
                     <IdCard size={13} /> NIK Lengkap (SIAK)
                   </span>
-                  <span className="font-mono font-bold text-gray-900 dark:text-white text-sm">
+                  <span className="font-mono font-bold text-gray-900 text-sm">
                     {selectedWarga.nikFull}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5 mb-0.5">
+                  <span className="text-gray-500 flex items-center gap-1.5 mb-0.5">
                     <Layers size={13} /> Tingkat Desil Kesejahteraan
                   </span>
-                  <span className="font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-0.5 rounded-md border border-blue-200 dark:border-blue-800 inline-block">
+                  <span className="font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200 inline-block">
                     Desil {selectedWarga.desil}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5 mb-0.5">
+                  <span className="text-gray-500 flex items-center gap-1.5 mb-0.5">
                     <FileCheck2 size={13} /> Status Kependudukan
                   </span>
-                  <span className="font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 inline-block">
+                  <span className="font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200 inline-block">
                     {selectedWarga.status}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5 mb-0.5">
+                  <span className="text-gray-500 flex items-center gap-1.5 mb-0.5">
                     <Calendar size={13} /> Tempat, Tanggal Lahir
                   </span>
-                  <span className="font-medium text-gray-800 dark:text-gray-200">
+                  <span className="font-medium text-gray-800">
                     {selectedWarga.ttl}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5 mb-0.5">
+                  <span className="text-gray-500 flex items-center gap-1.5 mb-0.5">
                     <MapPin size={13} /> Wilayah Kecamatan
                   </span>
-                  <span className="font-medium text-gray-800 dark:text-gray-200">
+                  <span className="font-medium text-gray-800">
                     {selectedWarga.kecamatan}
                   </span>
                 </div>
 
                 <div className="sm:col-span-2">
-                  <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5 mb-0.5">
+                  <span className="text-gray-500 flex items-center gap-1.5 mb-0.5">
                     <MapPin size={13} /> Alamat Domisili
                   </span>
-                  <span className="font-medium text-gray-800 dark:text-gray-200">
+                  <span className="font-medium text-gray-800">
                     {selectedWarga.alamat}
                   </span>
                 </div>
 
-                <div className="sm:col-span-2 pt-2 border-t border-gray-200 dark:border-slate-700">
-                  <span className="text-gray-500 dark:text-gray-400 block mb-0.5">Status Dokumen Fisik KTP</span>
-                  <span className="font-bold text-emerald-700 dark:text-emerald-400">
+                <div className="sm:col-span-2 pt-2 border-t border-gray-200">
+                  <span className="text-gray-500 block mb-0.5">Status Dokumen Fisik KTP</span>
+                  <span className="font-bold text-emerald-700">
                     {selectedWarga.statusKtp}
                   </span>
                 </div>
@@ -347,7 +346,7 @@ export function DataWargaKtpContent({
                 <button
                   type="button"
                   onClick={() => setSelectedWarga(null)}
-                  className="bg-black hover:bg-gray-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-semibold px-5 py-2 rounded-lg text-xs transition-colors cursor-pointer"
+                  className="bg-black hover:bg-gray-800 text-white font-semibold px-5 py-2 rounded-lg text-xs transition-colors cursor-pointer"
                 >
                   Tutup Profil Warga
                 </button>

@@ -1,28 +1,24 @@
 import React from "react";
 import { AdminDashboardLayout } from "@/app/components/admin/AdminDashboardLayout";
-import { AdminSettingsContent } from "@/app/components/admin/AdminSettingsContent";
-import { requireAdminPageSession } from "@/lib/services/admin.service";
+import { PengaturanDesilContent } from "@/app/components/admin/dinsos/PengaturanDesilContent";
 
 export const metadata = {
   title: "Pengaturan Profil - Admin Pusat | GOV-HUB",
   description: "Kelola informasi akun dan data profil administrator pusat.",
 };
 
-export default async function AdminDashboardPengaturanPage() {
-  const session = await requireAdminPageSession("pusat");
-
+export default function AdminDashboardPengaturanPage() {
   return (
     <AdminDashboardLayout
       instansi="pusat"
       instansiName="Pemerintah Republik Indonesia"
       roleTitle="Administrator Terpadu Pusat"
-      adminName={session.nama}
-      wilayahLabel={session.wilayahLabel}
+      adminName="Administrator Pusat GOV-HUB"
       basePath="/admin/dashboard"
     >
-      <AdminSettingsContent
-        session={session}
+      <PengaturanDesilContent
         roleTitle="Administrator Terpadu Pusat"
+        wilayah="Tingkat Nasional / Republik Indonesia"
       />
     </AdminDashboardLayout>
   );

@@ -1,55 +1,28 @@
 "use server";
 
-import { cookies, headers } from "next/headers";
 import {
   getAdminDesilSubmissions,
   updateDesilSubmissionStatus,
   getAdminKtpSubmissions,
   updateKtpSubmissionStatus,
-  getAdminDataWarga,
   authenticateAdmin,
+  lookupAdminByNip,
+  getAdminDataWarga,
   getAdminAccountsList,
   adminUpdateAccountPassword,
   adminDeleteAccount,
-  verifyAdminSession,
 } from "@/lib/services/admin.service";
-import {
-  ADMIN_SESSION_COOKIE,
-  ADMIN_SESSION_TTL_SECONDS,
-} from "@/lib/security";
 
-export async function getAdminDataWargaAction() {
-  const auth = await verifyAdminSession(["dinsos", "dukcapil", "pusat"]);
-  if (!auth.authorized) {
-    return { success: false, data: [], error: auth.error };
-  }
-  return await getAdminDataWarga();
+export async function getAdminDataWargaAction(params?: { kecamatan?: string; kota?: string }) {
+  return await getAdminDataWarga(params);
+}
+
+export async function lookupAdminByNipAction(nip: string) {
+  return await lookupAdminByNip(nip);
 }
 
 export async function adminLoginAction(params: { nip: string; password: string }) {
-  const authRes = await authenticateAdmin(params.nip, params.password);
-  if (!authRes.success || !authRes.token || !authRes.user) {
-    return { success: false, error: authRes.error || "Autentikasi gagal." };
-  }
-
-  const hdrs = await headers();
-  const isHttps =
-    hdrs.get("x-forwarded-proto") === "https" ||
-    process.env.NEXT_PUBLIC_SITE_URL?.startsWith("https://") === true;
-
-  const cookieStore = await cookies();
-  cookieStore.set(ADMIN_SESSION_COOKIE, authRes.token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: isHttps,
-    path: "/",
-    maxAge: ADMIN_SESSION_TTL_SECONDS,
-  });
-
-  return {
-    success: true,
-    user: authRes.user,
-  };
+  return await authenticateAdmin(params.nip, params.password);
 }
 
 export async function getAdminDesilSubmissionsAction() {
@@ -63,12 +36,7 @@ export async function updateDesilSubmissionStatusAction(params: {
   catatan?: string;
   petugasName?: string;
 }) {
-  return await updateDesilSubmissionStatus({
-    id: params.id,
-    status: params.status,
-    desilHasil: params.desilHasil,
-    catatan: params.catatan,
-  });
+  return await updateDesilSubmissionStatus(params);
 }
 
 export async function getAdminKtpSubmissionsAction() {
@@ -94,6 +62,8 @@ export async function adminUpdateAccountPasswordAction(params: {
   return await adminUpdateAccountPassword(params);
 }
 
-export async function adminDeleteAccountAction(params: { accountId: string }) {
+export async function adminDeleteAccountAction(params: {
+  accountId: string;
+}) {
   return await adminDeleteAccount(params);
 }

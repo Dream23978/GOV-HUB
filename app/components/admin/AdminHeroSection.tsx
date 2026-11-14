@@ -25,7 +25,7 @@ export function AdminHeroSection() {
       </div>
 
       {/* ── Top Navigation Bar ── */}
-      <header className="relative z-10 w-full px-6 md:px-12 py-6 flex items-center justify-between border-b border-white/10 backdrop-blur-sm">
+      <header className="relative z-10 w-full px-6 md:px-12 py-6 flex items-center justify-between border-b border-white/10 backdrop-blur-xs">
         {/* Logo & Admin Badge */}
         <div className="flex items-center gap-3.5">
           <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-700 p-0.5 shadow-lg shadow-blue-500/20 flex items-center justify-center">
